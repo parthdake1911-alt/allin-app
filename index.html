@@ -405,7 +405,9 @@ body{font-family:var(--body)}
 .bigcard > *{flex-shrink:0}
 @media (max-height:760px){.bigcard .h1{font-size:32px!important}.bigcard .h1.xl{font-size:38px!important}.bigcard .ticks{margin:8px 0 6px!important}}
 
-.wslide{position:absolute;inset:0;transition:opacity .35s,transform .35s}
+.wel-stack{flex:1 1 auto!important;min-height:226px}
+.wslide{position:absolute;left:0;right:0;top:calc(50% - 113px);height:226px;scale:var(--ws,1);transition:opacity .3s,transform .3s}
+.wel-foot{margin-top:18px!important}
 .wslide.out{opacity:0;transform:translateY(-14px) scale(.96)}
 .wcap{font-weight:700;font-size:15px;min-height:22px;margin-top:6px;overflow:hidden}
 .wticks{gap:6px}.wticks i{width:7px;height:7px;border-radius:999px;background:currentColor;opacity:.3;cursor:pointer;transition:width .35s,opacity .35s}.wticks i.on{width:22px;height:7px;opacity:1}
@@ -1118,12 +1120,12 @@ const WEL_SLIDES = [
 ];
 SCREENS.welcome = () => ({bg:'var(--tang)', html:`<div class="bigcard" style="align-items:center;text-align:center;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 0">
   <div class="drop" style="animation-delay:.05s;display:flex;align-items:center;gap:10px">${BR.icon(40,{cls:"br-shine"})}${BR.word(26,"#10262E","#fff")}</div>
-  <div class="wel-stack" id="wst" role="img" aria-live="polite" style="position:relative;width:100%;height:226px;margin-top:10px;cursor:pointer"></div>
+  <div class="wel-stack" id="wst" role="img" aria-live="polite" style="position:relative;width:100%;margin-top:10px;cursor:pointer"></div>
   <div class="wcap" id="wcap"></div>
   <div class="ticks wticks" id="wtk" style="margin:10px 0 12px">${WEL_SLIDES.map((_, i) => `<i data-i="${i}"></i>`).join('')}</div>
   <h1 class="h1" style="font-size:36px;margin:0">${words('Stop chasing.', .5, .08)}<br>${words('Lock the trip.', .75, .08)}</h1>
   <p class="sub rise" style="--d:12;color:var(--ink);opacity:.85;margin:10px 8px 0;font-size:14.5px">Friends say “I’m in” by paying their share. Not enough by the date? Everyone gets it back.</p>
-  <div class="foot" style="background:transparent;width:100%;margin-top:auto;padding-left:0;padding-right:0"><button class="btn rise" style="--d:14" data-go="create">Start a trip ${ic('right')}</button><button class="link" id="howit" style="color:var(--ink)">How does the money work?</button></div></div>`,
+  <div class="foot wel-foot" style="background:transparent;width:100%;margin-top:auto;padding-left:0;padding-right:0"><button class="btn rise" style="--d:14" data-go="create">Start a trip ${ic('right')}</button><button class="link" id="howit" style="color:var(--ink)">How does the money work?</button></div></div>`,
   after(el){
     const st = el.querySelector('#wst'), cap = el.querySelector('#wcap'), tk = el.querySelector('#wtk'); let i = -1, timer = null, hovT = null;
     const show = n => { if (!st.isConnected) return; i = (n + WEL_SLIDES.length) % WEL_SLIDES.length; const sl = WEL_SLIDES[i];
@@ -1135,6 +1137,7 @@ SCREENS.welcome = () => ({bg:'var(--tang)', html:`<div class="bigcard" style="al
       const c = box.querySelector('.wcount'); if (c) setTimeout(() => countUp(c, +c.dataset.to, 1100, v => Math.round(v).toLocaleString('en-IN')), 500);
       clearTimeout(hovT); if (!reduce) hovT = setTimeout(() => box.querySelectorAll('.gc,.phf,.wcard').forEach((g, k) => { if (g.isConnected){ g.classList.add('hov'); g.style.animationDelay = (-k * 1.6) + 's'; } }), 1700);
       clearTimeout(timer); timer = setTimeout(() => show(i + 1), reduce ? 6000 : 4200); };
+    const fit = () => st.style.setProperty('--ws', Math.min(1.16, Math.max(1, st.clientHeight / 330)).toFixed(3)); fit(); addEventListener('resize', fit);
     show(0);
     st.onclick = () => show(i + 1);
     tk.querySelectorAll('i').forEach(t => t.onclick = () => show(+t.dataset.i));
