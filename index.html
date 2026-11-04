@@ -405,6 +405,17 @@ body{font-family:var(--body)}
 .bigcard > *{flex-shrink:0}
 @media (max-height:760px){.bigcard .h1{font-size:32px!important}.bigcard .h1.xl{font-size:38px!important}.bigcard .ticks{margin:8px 0 6px!important}}
 
+.wslide{position:absolute;inset:0;transition:opacity .35s,transform .35s}
+.wslide.out{opacity:0;transform:translateY(-14px) scale(.96)}
+.wcap{font-weight:700;font-size:15px;min-height:22px;margin-top:6px;overflow:hidden}
+.wticks{gap:6px}.wticks i{width:7px;height:7px;border-radius:999px;background:currentColor;opacity:.3;cursor:pointer;transition:width .35s,opacity .35s}.wticks i.on{width:22px;height:7px;opacity:1}
+.wcard{position:absolute;left:6%;right:6%;background:#fff;border-radius:22px;padding:14px;box-shadow:var(--float),var(--gloss);text-align:left}
+.wtag{font-size:12px;font-weight:700;background:var(--mint);color:var(--pine);border-radius:999px;padding:4px 10px}
+.wseats{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;position:relative}
+.wseats span{aspect-ratio:1;border-radius:10px;border:1.5px dashed rgba(16,38,46,.3);display:grid;place-items:center;font-weight:700;font-size:13px}
+.wseats span.in{border:0;box-shadow:var(--gloss),0 4px 8px -4px rgba(16,38,46,.4)}
+.wseats .wline{position:absolute;left:calc(75% - 4px);top:-6px;bottom:-6px;width:2.5px;border-radius:2px;background:var(--sunset)}
+.wseal{width:44px;height:44px;border-radius:50%;background:var(--tang);display:grid;place-items:center;font-weight:800;font-size:14px;transform:rotate(-10deg);box-shadow:var(--gloss);flex:none}
 </style>
 
 <div class="stage"><div class="device" id="dev"></div></div>
@@ -637,15 +648,16 @@ SCREENS.create2 = () => ({html:`${head({over:'New trip · 2 of 2', title:'Who’
     <div class="row sp"><span class="num" id="amt" style="font-size:48px;color:var(--pine)">${rs(G.amount)}</span><span class="tag">covers the stay</span></div>
     <div class="chips amt-chips">${[2000, 5000, 8000].map(a => `<button class="chip ${G.amount === a ? 'on' : ''}" data-a="${a}">${rs(a)}</button>`).join('')}</div>
     <div class="small muted">Food and fun get split on the trip, in Money.</div></div>
-  <div class="card row sp"><div><b>Trip is on when</b><div class="small muted">including you</div></div><div class="step"><button id="mn" aria-label="Fewer">−</button><b id="need">${G.need}</b><button id="pls" aria-label="More">+</button></div></div>
+  <div class="card"><div class="row sp" style="gap:10px"><div style="flex:1;min-width:0"><b style="font-size:16px">Trip locks when</b><div class="small muted">this many members have paid, including you</div></div><div class="step"><button id="mn" aria-label="Fewer members">−</button><span style="display:flex;flex-direction:column;align-items:center;line-height:1"><b id="need">${G.need}</b><span style="font-size:12px;font-weight:700;margin-top:2px">members</span></span><button id="pls" aria-label="More members">+</button></div></div>
+  <div class="note" id="needtxt" style="margin-top:12px;font-weight:600;padding:10px 12px">${ic('users','s')}<span>Locks when <b class="nn">${G.need}</b> of <b class="nt">${total()}</b> members have paid. Not by the last date? Everyone gets it back.</span></div></div>
   <div class="card" style="display:flex;flex-direction:column;gap:10px"><div class="row sp"><div><b>Last date to join</b><div class="small muted">Not enough by then? Everyone gets a full refund.</div></div><span id="jbt" hidden>${joinTxt()}</span></div><button class="field row sp" id="jb" style="text-align:left;cursor:pointer" aria-label="Pick the last date to join"><span id="jbv" style="font-weight:600">${joinTxt()}, 2026</span>${ic('cal')}</button></div>
   </div></div><div class="foot"><button class="btn" id="go">Create the trip link ${ic('right')}</button></div>`,
   after(el){
-    el.querySelectorAll('#gg [data-n]').forEach(b => b.onclick = () => { const n = b.dataset.n; G.gang = G.gang.includes(n) ? G.gang.filter(x => x !== n) : [...G.gang, n]; b.classList.toggle('on'); if (G.need > total()) { G.need = total(); el.querySelector('#need').textContent = G.need; } });
+    el.querySelectorAll('#gg [data-n]').forEach(b => b.onclick = () => { const n = b.dataset.n; G.gang = G.gang.includes(n) ? G.gang.filter(x => x !== n) : [...G.gang, n]; b.classList.toggle('on'); if (G.need > total()) { G.need = total(); el.querySelector('#need').textContent = G.need; } const t = el.querySelector('#needtxt'); if (t){ t.querySelector('.nn').textContent = G.need; t.querySelector('.nt').textContent = total(); } });
     el.querySelectorAll('[data-a]').forEach(b => b.onclick = () => { G.amount = +b.dataset.a; el.querySelectorAll('[data-a]').forEach(x => x.classList.toggle('on', x === b)); countUp(el.querySelector('#amt'), G.amount, 400); });
     el.querySelector('#amt').dataset.v = G.amount;
-    const nd = el.querySelector('#need'); el.querySelector('#mn').onclick = () => { G.need = Math.max(2, G.need - 1); nd.textContent = G.need; nd.animate([{transform:'scale(1.3)'},{transform:'none'}], 200); };
-    el.querySelector('#pls').onclick = () => { G.need = Math.min(total(), G.need + 1); nd.textContent = G.need; nd.animate([{transform:'scale(1.3)'},{transform:'none'}], 200); };
+    const nd = el.querySelector('#need'); const syncNeed = () => { const t = el.querySelector('#needtxt'); if (t){ t.querySelector('.nn').textContent = G.need; t.querySelector('.nt').textContent = total(); } }; el.querySelector('#mn').onclick = () => { G.need = Math.max(2, G.need - 1); nd.textContent = G.need; syncNeed(); nd.animate([{transform:'scale(1.3)'},{transform:'none'}], 200); };
+    el.querySelector('#pls').onclick = () => { G.need = Math.min(total(), G.need + 1); nd.textContent = G.need; syncNeed(); nd.animate([{transform:'scale(1.3)'},{transform:'none'}], 200); };
     el.querySelector('#jb').onclick = () => datePick(G.joinBy, '2026-11-06', isoOf(new Date(dOf(G.sd) - 864e5)), v => { G.joinBy = v; el.querySelector('#jbt').textContent = joinTxt(); el.querySelector('#jbv').textContent = joinTxt() + ', 2026'; el.querySelector('#jbt').animate([{transform:'scale(1.2)'},{transform:'none'}], 260); });
     el.querySelector('#go').onclick = () => { if (G.gang.length < 1) return; nav('share'); }; }});
 
@@ -1083,25 +1095,57 @@ const wordmark = (c = '#10262E') => BR.word(22, c, '#FFA45D');
 SCREENS.splash = () => ({bg:'var(--tang)', html:`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px" class="br-anim">${BR.icon(112,{cls:'br-shine'})}<div style="opacity:0;animation:brDrop .6s cubic-bezier(.3,1.3,.5,1) .5s both">${BR.word(40,'#10262E','#fff')}</div></div>`,
   after(){ setTimeout(() => nav('welcome', null, 'fade'), reduce ? 300 : 1100); }});
 
+const WEL_SLIDES = [
+  {cap:'Friends pay to say yes', html:() => `
+    <div class="gc drop" style="top:6px;background:#fff;--r:-5deg;animation-delay:.1s"><span class="av" style="background:var(--sea);color:#fff">A</span><span>Aman<span class="sub">₹5,000</span></span><span class="pl slam" style="animation-delay:.7s">Paid</span></div>
+    <div class="gc drop" style="top:68px;background:var(--mint);--r:2deg;animation-delay:.28s"><span class="av" style="background:var(--tang)">P</span><span>Priya<span class="sub">₹5,000</span></span><span class="pl slam" style="animation-delay:.9s">Paid</span></div>
+    <div class="gc drop" style="top:130px;background:var(--sea);color:#fff;--r:-2deg;animation-delay:.46s"><span class="av" style="background:#fff;color:var(--ink)">K</span><span>Karan<span class="sub strike" style="--sd:1.2s">maybe</span></span><span class="pl slam" style="background:#fff;color:var(--pine);animation-delay:1.6s">Paid</span></div>`},
+  {cap:'Enough are in? The trip locks', html:() => `
+    <div class="wcard drop" style="top:10px;--r:-2deg;animation-delay:.05s"><div class="row sp" style="margin-bottom:10px"><b style="font-size:15px">Goa · 12–15 Dec</b><span class="wtag">6 of 8 in</span></div>
+      <div class="wseats">${['N','A','P','K','R','S','',''].map((n, i) => `<span class="${n ? 'in pop' : ''}" style="--d:${3 + i * 2};${n ? `background:${['#FFA45D','#E16A3D','#fff','#1C9290','#DDF0EE','#FFA45D'][i]};color:${[3].includes(i) ? '#fff' : '#10262E'}` : ''}">${n}</span>`).join('')}<i class="wline"></i></div></div>
+    <div class="slam" style="position:absolute;right:6%;top:118px;animation-delay:1.5s;width:92px;height:92px;border-radius:50%;border:3px solid var(--ink);background:var(--tang);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:var(--float)">${BR.ticket({w:56, tilt:0, fill:'#fff'})}<b style="font-size:12px;letter-spacing:.06em;margin-top:2px">LOCKED</b></div>
+    <span class="fchip drop" style="left:8%;top:168px;--r:-6deg;animation-delay:1.1s">₹30,000 to book the stay</span>`},
+  {cap:'On the trip, your gang unlocks perks', html:() => `
+    <div class="phf drop" style="left:6%;top:4px;width:44%;height:118px;--r:-8deg;animation-delay:.05s"><img src="${IMG.palolem}" alt=""></div>
+    <div class="phf drop" style="right:5%;top:14px;width:42%;height:112px;--r:7deg;animation-delay:.22s"><img src="${IMG.bonfire}" alt=""></div>
+    <div class="gc drop" style="top:132px;left:5%;right:5%;background:var(--peach);--r:-2deg;animation-delay:.5s"><span class="wseal">40%</span><span style="flex:1">Martin’s Corner<span class="sub">your gang unlocked 40% off</span></span></div>
+    <span class="fchip slam" style="right:8%;top:196px;background:var(--pine);color:#fff;animation-delay:1.2s">7 of you went All In</span>`},
+  {cap:'Settle up. Zero chasing.', html:() => `
+    <div class="wcard drop" style="top:12px;--r:2deg;animation-delay:.05s;text-align:left"><span class="over" style="opacity:.6">Each, all in</span><div style="font-size:40px;font-weight:800;letter-spacing:-.04em;line-height:1.05">₹<span class="wcount" data-to="5371">0</span></div>
+      <div class="row" style="gap:5px;margin-top:8px">${['N','A','P','K','R','S','V'].map((n, i) => `<span class="av pop" style="--d:${6 + i};width:26px;height:26px;font-size:11px;background:${['#FFA45D','#E16A3D','#fff','#1C9290','#DDF0EE','#FFA45D','#fff'][i]};color:${i === 3 ? '#fff' : '#10262E'}">${n}</span>`).join('')}</div></div>
+    <div class="slam" style="position:absolute;right:7%;top:120px;animation-delay:1.3s;padding:10px 16px;border-radius:999px;background:var(--sunset);color:#fff;font-weight:800;font-size:18px;box-shadow:var(--float)">All square ✓</div>
+    <span class="fchip drop" style="left:8%;top:176px;--r:-5deg;animation-delay:1s">0 reminders from Neha</span>`}
+];
 SCREENS.welcome = () => ({bg:'var(--tang)', html:`<div class="bigcard" style="align-items:center;text-align:center;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 0">
   <div class="drop" style="animation-delay:.05s;display:flex;align-items:center;gap:10px">${BR.icon(40,{cls:"br-shine"})}${BR.word(26,"#10262E","#fff")}</div>
-  <div class="wel-stack" style="position:relative;width:100%;height:226px;margin-top:10px">
-    <div class="gc drop" style="top:6px;background:#fff;--r:-5deg;animation-delay:.25s"><span class="av" style="background:var(--sea);color:#fff">A</span><span>Aman<span class="sub">₹5,000</span></span><span class="pl slam" style="animation-delay:.9s">Paid</span></div>
-    <div class="gc drop" style="top:68px;background:var(--mint);--r:2deg;animation-delay:.45s"><span class="av" style="background:var(--tang)">P</span><span>Priya<span class="sub">₹5,000</span></span><span class="pl slam" style="animation-delay:1.1s">Paid</span></div>
-    <div class="gc drop" style="top:130px;background:var(--sea);color:#fff;--r:-2deg;animation-delay:.65s"><span class="av" style="background:#fff;color:var(--ink)">K</span><span>Karan<span class="sub strike" style="--sd:1.5s">maybe</span></span><span class="pl slam" style="background:#fff;color:var(--pine);animation-delay:1.9s">Paid</span></div>
-  </div>
-  
-  <div class="ticks" style="margin:18px 0 10px"><i class="on"></i><i></i><i></i></div>
+  <div class="wel-stack" id="wst" role="img" aria-live="polite" style="position:relative;width:100%;height:226px;margin-top:10px;cursor:pointer"></div>
+  <div class="wcap" id="wcap"></div>
+  <div class="ticks wticks" id="wtk" style="margin:10px 0 12px">${WEL_SLIDES.map((_, i) => `<i data-i="${i}"></i>`).join('')}</div>
   <h1 class="h1" style="font-size:36px;margin:0">${words('Stop chasing.', .5, .08)}<br>${words('Lock the trip.', .75, .08)}</h1>
   <p class="sub rise" style="--d:12;color:var(--ink);opacity:.85;margin:10px 8px 0;font-size:14.5px">Friends say “I’m in” by paying their share. Not enough by the date? Everyone gets it back.</p>
   <div class="foot" style="background:transparent;width:100%;margin-top:auto;padding-left:0;padding-right:0"><button class="btn rise" style="--d:14" data-go="create">Start a trip ${ic('right')}</button><button class="link" id="howit" style="color:var(--ink)">How does the money work?</button></div></div>`,
   after(el){
-    if (!reduce) el.querySelectorAll('.gc').forEach((g, i) => setTimeout(() => { if (g.isConnected) g.classList.add('hov'); g.style.animationDelay = (-i * 1.6) + 's'; }, 1400));
+    const st = el.querySelector('#wst'), cap = el.querySelector('#wcap'), tk = el.querySelector('#wtk'); let i = -1, timer = null, hovT = null;
+    const show = n => { if (!st.isConnected) return; i = (n + WEL_SLIDES.length) % WEL_SLIDES.length; const sl = WEL_SLIDES[i];
+      const old = st.firstElementChild; const box = document.createElement('div'); box.className = 'wslide'; box.innerHTML = sl.html();
+      if (old){ old.classList.add('out'); setTimeout(() => old.remove(), 380); }
+      st.appendChild(box); st.setAttribute('aria-label', sl.cap);
+      cap.innerHTML = `<span class="k" style="animation-delay:.15s">${sl.cap}</span>`;
+      tk.querySelectorAll('i').forEach((t, k) => { t.className = k === i ? 'on' : ''; });
+      const c = box.querySelector('.wcount'); if (c) setTimeout(() => countUp(c, +c.dataset.to, 1100, v => Math.round(v).toLocaleString('en-IN')), 500);
+      clearTimeout(hovT); if (!reduce) hovT = setTimeout(() => box.querySelectorAll('.gc,.phf,.wcard').forEach((g, k) => { if (g.isConnected){ g.classList.add('hov'); g.style.animationDelay = (-k * 1.6) + 's'; } }), 1700);
+      clearTimeout(timer); timer = setTimeout(() => show(i + 1), reduce ? 6000 : 4200); };
+    show(0);
+    st.onclick = () => show(i + 1);
+    tk.querySelectorAll('i').forEach(t => t.onclick = () => show(+t.dataset.i));
+    let sx = null; st.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, {passive:true});
+    st.addEventListener('touchend', e => { if (sx === null) return; const d = e.changedTouches[0].clientX - sx; if (Math.abs(d) > 40) show(i + (d < 0 ? 1 : -1)); sx = null; });
     el.querySelector('#howit').onclick = () => sheet(`<h2 style="margin:0;letter-spacing:-.02em">How the money works</h2><div class="how">
     <span class="n">1</span><div><b>You set the share</b><div class="small muted">E.g. ₹5,000 each. Usually covers the stay.</div></div>
     <span class="n">2</span><div><b>Friends pay to say yes</b><div class="small muted">It’s held safely by our payment partner, not by you or us.</div></div>
     <span class="n">3</span><div><b>Enough are in? It’s locked</b><div class="small muted">The money is released to the organisers to book, anywhere they like.</div></div>
     <span class="n">4</span><div><b>Not enough by the last date?</b><div class="small muted">Everyone gets a full refund automatically. Nobody has to ask.</div></div></div><button class="btn" data-close>Got it</button>`); }});
+
 
 SCREENS.locked = () => { const amt = collected().toLocaleString('en-IN');
   return {bg:'var(--nile)', html:`<div class="bigcard spot" style="color:#fff;align-items:center;text-align:center;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 0"><div class="grain"></div>
