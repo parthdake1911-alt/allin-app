@@ -379,6 +379,26 @@ body{font-family:var(--body)}
 .seat.lockline::after{border-right-width:2.5px;border-radius:2px}
 .tier{border-radius:12px}
 
+/* v4 brand + calendar + swipe */
+.brandrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+.banner .app{background:none!important;border:0!important;padding:0!important;width:auto!important;height:auto!important}
+.datebtn{display:flex;align-items:center;gap:14px;width:100%;border:0;background:#fff;border-radius:22px;padding:12px 16px 12px 12px;box-shadow:var(--float),var(--gloss);font:inherit;color:inherit;text-align:left}
+.datebtn:active{transform:scale(.98)}
+.dcal{width:56px;height:60px;border-radius:16px;background:var(--tang);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:var(--gloss);flex:none}
+.dcal b{font-size:11px;letter-spacing:.08em;line-height:1}.dcal span{font-size:26px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.rcal button.in{background:var(--mint);border-radius:0}
+.rcal button.start{border-radius:12px 0 0 12px}.rcal button.end{border-radius:0 12px 12px 0}
+.rcal button.start:last-child,.rcal button.start:only-child{border-radius:12px}
+.endcard{background:#fff;border-radius:22px;padding:14px;box-shadow:var(--float),var(--gloss)}
+.swipe{position:relative;height:62px;border-radius:999px;background:var(--cream);box-shadow:inset 0 2px 6px rgba(16,38,46,.12);overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:none}
+.sfill{position:absolute;left:0;top:0;bottom:0;width:60px;border-radius:999px;background:var(--sunset)}
+.slab{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:700;font-size:15px;color:var(--ink);padding-left:44px;animation:slabpulse 2.4s ease-in-out infinite}
+.swipe.done .slab{color:#fff;padding-left:0;animation:none}
+@keyframes slabpulse{50%{opacity:.55;transform:translateX(6px)}}
+.thumb{position:absolute;left:4px;top:4px;width:54px;height:54px;border:0;border-radius:999px;background:#fff;display:grid;place-items:center;box-shadow:var(--float),var(--gloss);transform:rotate(-10deg);cursor:grab;padding:0}
+.swipe.drag .thumb{cursor:grabbing}
+.thumb .br-ticket{width:40px!important}
+
 </style>
 
 <div class="stage"><div class="device" id="dev"></div></div>
@@ -475,13 +495,13 @@ dev.addEventListener('click', e => {
 });
 
 /* ---------- shared bits ---------- */
-const head = (o) => `<header class="band ${o.bg || 'peach'}">
+const head = (o) => `<header class="band ${o.bg || 'peach'}">${o.back === false ? `<div class="brandrow">${BR.word(20)}</div>` : ''}
   <div class="navrow">${o.back === false ? '' : `<button class="back" data-back aria-label="Back">${ic('left')}</button>`}${o.over ? `<span class="over">${o.over}</span>` : ''}${o.right || ''}</div>
   ${o.title ? `<h1 class="h1 ${o.xl ? 'xl' : ''}">${o.title}</h1>` : ''}${o.sub ? `<p class="sub">${o.sub}</p>` : ''}</header>`;
 const tabs = on => `<nav class="tabs" aria-label="Main">${[['trip','home','Trip','trip'],['plan','pin','Plan','plan'],['perks','ticket','Perks','perks'],['money','wallet','Money','money'],['memories','image','Memories','memories']].map(([k, i, l, scr]) => `<button class="${on === k ? 'on' : ''}" data-tab="${scr}" aria-current="${on === k}">${ic(i)}<span>${l}</span></button>`).join('')}</nav>`;
 function banner(title, body, onTap, ms = 4200){
   const b = document.createElement('button'); b.className = 'banner'; b.style.textAlign = 'left'; b.style.font = 'inherit';
-  b.innerHTML = `<span class="app">${ic('ticket','s')}</span><span class="grow"><span class="row sp"><b class="over">All In</b><span class="small muted">now</span></span><b style="display:block;font-size:14.5px">${title}</b><span class="small muted">${body}</span></span>`;
+  b.innerHTML = `<span class="app">${BR.icon(36)}</span><span class="grow"><span class="row sp"><b class="over">All In</b><span class="small muted">now</span></span><b style="display:block;font-size:14.5px">${title}</b><span class="small muted">${body}</span></span>`;
   b.querySelectorAll('.app svg').forEach(s => s.style.color = '#fff');
   b.onclick = () => { b.remove(); onTap && onTap(); };
   dev.appendChild(b); setTimeout(() => { b.classList.add('out'); setTimeout(() => b.remove(), 320); }, ms);
@@ -562,7 +582,7 @@ const tabs2 = on => { const t = G.live ? [['trip','home','Trip','trip'],['perks'
   return `<nav class="tabs" style="grid-template-columns:repeat(${t.length},1fr)" aria-label="Main">${t.map(([k, i, l, sc]) => `<button class="${on === k ? 'on' : ''}" data-tab="${sc}" aria-current="${on === k}">${ic(i)}<span>${l}</span>${k === 'perks' ? `<span style="position:absolute;margin-left:28px;margin-top:-4px;background:var(--sunset);color:#fff;border-radius:999px;font-size:10px;font-weight:700;padding:0 5px;border:1.5px solid var(--ink)">${PERKS.filter(p => perkOn(p)).length}</span>` : ''}</button>`).join('')}</nav>`; };
 const countUp = (el, to, ms = 900, fmt = v => rs(v)) => { if (!el) return; const from = +(el.dataset.v || 0); el.dataset.v = to; let st = null; const step = ts => { if (!st) st = ts; const k = Math.min(1, (ts - st) / ms); el.textContent = fmt(from + (to - from) * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); };
 const joinTxt = () => new Date(G.joinBy + 'T00:00:00').toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short'});
-const datesTxt = () => `${dayName(G.start)} ${G.start} – ${dayName(G.end)} ${G.end} Dec`;
+const datesTxt = () => `${fmtD(G.sd)} – ${fmtD(G.ed)}`;
 
 /* splash */
 SCREENS.splash = () => ({bg:'var(--pine)', html:`<div style="flex:1;display:grid;place-items:center">
@@ -620,7 +640,7 @@ SCREENS.create2 = () => ({html:`${head({over:'New trip · 2 of 2', title:'Who’
     el.querySelector('#amt').dataset.v = G.amount;
     const nd = el.querySelector('#need'); el.querySelector('#mn').onclick = () => { G.need = Math.max(2, G.need - 1); nd.textContent = G.need; nd.animate([{transform:'scale(1.3)'},{transform:'none'}], 200); };
     el.querySelector('#pls').onclick = () => { G.need = Math.min(total(), G.need + 1); nd.textContent = G.need; nd.animate([{transform:'scale(1.3)'},{transform:'none'}], 200); };
-    el.querySelector('#jb').onclick = () => datePick(G.joinBy, '2026-11-06', `2026-12-${String(G.start - 1).padStart(2, '0')}`, v => { G.joinBy = v; el.querySelector('#jbt').textContent = joinTxt(); el.querySelector('#jbv').textContent = joinTxt() + ', 2026'; el.querySelector('#jbt').animate([{transform:'scale(1.2)'},{transform:'none'}], 260); });
+    el.querySelector('#jb').onclick = () => datePick(G.joinBy, '2026-11-06', isoOf(new Date(dOf(G.sd) - 864e5)), v => { G.joinBy = v; el.querySelector('#jbt').textContent = joinTxt(); el.querySelector('#jbv').textContent = joinTxt() + ', 2026'; el.querySelector('#jbt').animate([{transform:'scale(1.2)'},{transform:'none'}], 260); });
     el.querySelector('#go').onclick = () => { if (G.gang.length < 1) return; nav('share'); }; }});
 
 /* share */
@@ -642,7 +662,7 @@ function seatsHTML(fresh){
 }
 SCREENS.home = () => {
   const locked = G.inList.length >= G.need;
-  return {html:`<header class="band peach" style="gap:6px"><div class="row sp"><div><div class="small muted">Hi Neha · ${G.lead && G.lead !== 'Neha' ? G.lead + ' runs the trip' : G.orgs.length > 1 ? 'you and ' + G.orgs.filter(o => o !== 'Neha').join(', ') + ' organise' : 'you’re organising'}</div><div class="h1" style="font-size:38px">${esc(G.place)} · ${G.start}–${G.end} Dec</div></div><button class="back" id="gangbtn" aria-label="The gang and organisers">${ic('users')}</button></div></header>
+  return {html:`<header class="band peach" style="gap:6px"><div class="brandrow">${BR.word(20)}</div><div class="row sp"><div><div class="small muted">Hi Neha · ${G.lead && G.lead !== 'Neha' ? G.lead + ' runs the trip' : G.orgs.length > 1 ? 'you and ' + G.orgs.filter(o => o !== 'Neha').join(', ') + ' organise' : 'you’re organising'}</div><div class="h1" style="font-size:38px">${esc(G.place)} · ${rangeTxt()}</div></div><button class="back" id="gangbtn" aria-label="The gang and organisers">${ic('users')}</button></div></header>
   <div class="scroll"><div class="pad">
   ${locked ? countdownHero() : `  <div class="hero rise" id="hero">${locked ? '<div class="shine"></div>' : ''}
     <div class="row sp" style="align-items:flex-start"><div><span class="over" style="color:var(--mint)">${locked ? 'Trip locked' : 'Who’s in'}</span><div class="big"><span id="inN">${G.inList.length}</span><span style="font-size:32px"> of ${total()}</span></div><div style="font-weight:600;margin-top:4px" id="sub">${locked ? 'It’s happening! 🎉' : `${Math.max(0, G.need - G.inList.length)} more to lock the trip`}</div></div>
@@ -704,14 +724,14 @@ function joinSim(n){
 function countdownHero(){ const ins = G.inList;
   return `<div class="hero rise" id="hero" style="background:var(--ink)"><div class="shine"></div><div id="seatbox" hidden></div>
     <div class="row sp"><span class="over" style="color:var(--tang)">Trip locked · ${ins.length} of ${total()} in</span><span class="tag" style="background:var(--tang);font-weight:700;border:2px solid #fff">${esc(G.place)}</span></div>
-    <div class="row" style="align-items:flex-end;gap:14px">${odo(String(Math.max(0, Math.floor((new Date(2026, 11, G.start, 6) - Date.now()) / 864e5))).padStart(2, "0"), "dleft", 104, 74)}<span class="num" style="font-size:40px;line-height:.9;color:#fff">days<br>to go</span></div>
+    <div class="row" style="align-items:flex-end;gap:14px">${odo(String(Math.max(0, Math.floor((dOf(G.sd).setHours(6) - Date.now()) / 864e5))).padStart(2, "0"), "dleft", 104, 74)}<span class="num" style="font-size:40px;line-height:.9;color:#fff">days<br>to go</span></div>
     <div class="row sp"><div class="countdown" aria-label="Time left"><span id="th">00h</span><span id="tm">00m</span><span id="ts">00s</span></div><span class="small" style="opacity:.85">${datesTxt()}</span></div>
     <div class="row sp" style="border-top:1.5px solid rgba(255,255,255,.2);padding-top:12px"><div class="avs">${ins.map(n => avatar(n, 'sm')).join('')}</div><span class="small" style="opacity:.9">${rs(collected())} collected</span></div>
   </div>`; }
 function plansCard(){ const rahulIn = G.inList.includes('Rahul') && !G.dropDone;
   return `<div class="card rise" style="--d:3;display:flex;flex-direction:column;gap:4px"><b style="font-size:16px">If plans change</b><div class="small muted" style="margin-bottom:6px">Everyone agreed to these rules before paying.</div>
     ${[['drop','users', rahulIn ? 'Rahul can’t come anymore' : 'Someone can’t come', 'Offer their seat, or the drop-out rule applies'],['hand','spark', G.lead && G.lead !== 'Neha' ? `${G.lead} runs the trip now` : 'I can’t manage the trip', 'Hand it over to someone in the gang'],['cancel','x','Cancel the whole trip','Needs most of the gang to agree · refunds']].map(r => `<button class="row" data-edge="${r[0]}" style="border:0;background:none;text-align:left;padding:10px 0;border-top:1px solid var(--line);gap:12px;width:100%"><span style="width:38px;height:38px;border-radius:10px;background:${r[0] === 'cancel' ? 'var(--peach)' : 'var(--mint)'};display:grid;place-items:center;flex:none">${ic(r[1],'s')}</span><span class="grow"><b style="display:block">${r[2]}</b><span class="small muted">${r[3]}</span></span>${ic('right','s')}</button>`).join('')}</div>`; }
-function startCountdown(el){ const tgt = new Date(2026, 11, G.start, 6, 0, 0); const dl = el.querySelector('#dleft'); if (!dl) return;
+function startCountdown(el){ const tgt = new Date(G.sd + 'T06:00:00'); const dl = el.querySelector('#dleft'); if (!dl) return;
   const days = Math.max(0, Math.floor((tgt - Date.now()) / 864e5)); rollOdo(dl, String(days).padStart(2, '0'), 300);
   const tick = () => { if (!el.isConnected || !el.querySelector('#th')) return clearInterval(iv); const s = Math.max(0, Math.floor((tgt - Date.now()) / 1000)) % 86400; el.querySelector('#th').textContent = String(Math.floor(s / 3600)).padStart(2, '0') + 'h'; el.querySelector('#tm').textContent = String(Math.floor(s % 3600 / 60)).padStart(2, '0') + 'm'; el.querySelector('#ts').textContent = String(s % 60).padStart(2, '0') + 's'; };
   const iv = setInterval(tick, 1000); tick(); }
@@ -824,7 +844,7 @@ function bindCam(el, onAdd){ const inp = el.querySelector('#cam'); if (!inp) ret
     banner('Shared with the gang only', `${(G.photos || []).length + DEMO_PHOTOS.length} photos in the ${G.place} album`, null, 2200); onAdd && onAdd(); }; }
 const allPhotos = () => [...(G.photos || []), ...DEMO_PHOTOS];
 SCREENS.live = () => { const ph = allPhotos();
-  return {html:`<header class="band peach" style="gap:6px"><div class="row sp"><div><div class="small muted">Day 2 of ${G.end - G.start + 1} · ${G.inList.length} of you</div><div class="h1" style="font-size:38px">${esc(G.place)} · live</div></div><button class="back" id="gangbtn" aria-label="The gang">${ic('users')}</button></div></header>
+  return {html:`<header class="band peach" style="gap:6px"><div class="brandrow">${BR.word(20)}</div><div class="row sp"><div><div class="small muted">Day 2 of ${nDays()} · ${G.inList.length} of you</div><div class="h1" style="font-size:38px">${esc(G.place)} · live</div></div><button class="back" id="gangbtn" aria-label="The gang">${ic('users')}</button></div></header>
   <div class="scroll"><div class="pad">${camInput()}
   <button class="hero rise" data-cam style="text-align:left;width:100%;cursor:pointer;background:var(--ink);padding:16px">
     <div class="row sp"><div><span class="over" style="color:var(--tang)">Trip cam · only the gang sees it</span><div class="h1" style="font-size:34px;color:#fff;margin-top:4px">Tap to shoot</div><div class="small" style="opacity:.85">Every photo lands in one ${esc(G.place)} album. No “send me the pics”.</div></div>
@@ -869,7 +889,7 @@ function perkSheet(p){ p = (p && p.id) ? p : PERKS[0]; const on = perkOn(p);
   <p class="small muted" style="margin:0">${on ? 'The place pays for this discount to fill quiet hours with a big group. You never pay us anything.' : `Get ${p.min - G.inList.length} more ${p.min - G.inList.length === 1 ? 'friend' : 'friends'} in to unlock it.`}</p>
   <button class="btn" data-close>${on ? 'Show at the counter ' + ic('right') : 'Okay'}</button>`); }
 SCREENS.memories = () => { const ph = allPhotos();
-  return {bg:'var(--cream)', html:`<header class="band plain" style="background:var(--cream)"><div class="row sp"><div><div class="small muted">${G.start}–${G.end} Dec · ${G.inList.length} friends · ${ph.length} photos</div><div class="hand" style="font-size:34px;font-weight:700;color:var(--pine);line-height:1">${esc(G.place.toLowerCase())} ’26</div></div><button class="back" data-cam aria-label="Take a photo">${ic('camera')}</button></div></header>
+  return {bg:'var(--cream)', html:`<header class="band plain" style="background:var(--cream)"><div class="row sp"><div><div class="small muted">${rangeTxt()} · ${G.inList.length} friends · ${ph.length} photos</div><div class="hand" style="font-size:34px;font-weight:700;color:var(--pine);line-height:1">${esc(G.place.toLowerCase())} ’26</div></div><button class="back" data-cam aria-label="Take a photo">${ic('camera')}</button></div></header>
   <div class="scroll"><div class="pad">${camInput()}
   <div class="note"><span>${ic('lock')}</span><span>Only the ${G.inList.length} of you can see these. Nothing is public. Download the whole album any time.</span></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">${ph.map((p, i) => `<div class="polaroid pop" style="--d:${Math.min(i, 6)};--r:${[-3, 2, -1.5, 3, -2, 1.5][i % 6]}deg;padding:6px 6px 0"><img src="${photoSrc(p)}" alt="${esc(p.cap)}" style="height:130px"><p style="font-size:16px;margin:4px 2px 2px">${esc(p.cap)}</p><div class="small muted" style="padding:0 2px 6px">by ${esc(p.by)}</div></div>`).join('')}</div>
@@ -917,7 +937,7 @@ SCREENS.settle = () => { const {bal} = balances(); const rows = Object.entries(b
   </div></div><div class="foot"><button class="btn" id="go">${pays.some(p => p.from === 'Neha') ? 'Pay my part by UPI' : 'Send a gentle reminder'} ${ic('right')}</button></div>`,
   after(el){ const run = async () => { for (let i = 0; i < pays.length; i++){ await wait(900); const s = el.querySelector(`[data-st="${i}"]`); if (s){ s.textContent = 'Paid ✓'; s.style.color = 'var(--pine)'; } el.querySelector('#sc').textContent = `${i + 1} of ${pays.length}`; el.querySelector('#sb').style.width = ((i + 1) / pays.length * 100) + '%'; } await wait(700); nav('square', null, 'up'); };
     el.querySelector('#go').onclick = () => { const mine = pays.find(p => p.from === 'Neha'); if (mine) upiPay(mine.amt, mine.to, 'Settle up · ' + G.place, run); else { banner('Reminder sent', 'Friends who owe got a nudge.', null, 1800); run(); } }; }}; };
-SCREENS.square = () => ({bg:'var(--mint)', html:`<div class="scroll"><div style="height:230px;display:grid;place-items:center;border-bottom:1.5px solid var(--ink)"><div class="stampin" style="width:160px;height:160px;border-radius:50%;border:5px solid var(--sunset);display:grid;place-items:center;color:var(--sunset);text-align:center;font-family:var(--display);font-weight:900;font-size:40px;line-height:.85">SETTLED<br><span class="mono" style="font-size:12px">${esc(G.place.toUpperCase())} · ${G.end + 2} DEC</span></div></div>
+SCREENS.square = () => ({bg:'var(--mint)', html:`<div class="scroll"><div style="height:230px;display:grid;place-items:center;border-bottom:1.5px solid var(--ink)"><div class="stampin" style="width:160px;height:160px;border-radius:50%;border:5px solid var(--sunset);display:grid;place-items:center;color:var(--sunset);text-align:center;font-family:var(--display);font-weight:900;font-size:40px;line-height:.85">SETTLED<br><span class="mono" style="font-size:12px">${esc(G.place.toUpperCase())} · ${rangeTxt().toUpperCase()}</span></div></div>
   <div class="pad"><h1 class="h1 xl rise">All square!</h1><p class="sub rise" style="--d:1">From “Goa in Dec??” to a trip that happened, and nobody chased anybody.</p>
   <div class="card rise" style="--d:2;display:flex;flex-direction:column;gap:8px">${[['Said yes with money', G.inList.length + ' of ' + total()],['Collected before booking', rs(collected())],['Spent on the trip', rs(G.spends.reduce((a, s) => a + s.amt, 0))],['Reminders Neha had to send','0']].map(r => `<div class="row sp"><span class="muted">${r[0]}</span><b>${r[1]}</b></div>`).join('')}</div>
   </div></div><div class="foot" style="background:transparent"><button class="btn" data-go="feedback" data-how="up">Tell Parth what you think ${ic('star','s')}</button><button class="link" id="again">Start again</button></div>`,
@@ -1002,7 +1022,7 @@ SCREENS.locked = () => { const amt = collected().toLocaleString('en-IN');
 SCREENS.square = () => { const each = Math.round(balances().tot / Math.max(1, G.inList.length)).toLocaleString('en-IN');
   return {bg:'var(--sunset)', html:`<div class="bigcard">
   <svg viewBox="0 0 360 200" preserveAspectRatio="xMidYMin slice" style="position:absolute;left:0;top:calc(60px + env(safe-area-inset-top,0px));width:100%;height:200px" aria-hidden="true">${ribbon('sq', 'M-40 140 C 60 60, 140 200, 220 110 S 360 40, 420 90', 'SETTLED ✦ ALL SQUARE ✦ ', '#FFF6EE', '#10262E', 7)}</svg>
-  <div class="slam" style="position:absolute;right:22px;top:calc(250px + env(safe-area-inset-top,0px));animation-delay:.9s;width:104px;height:104px;border-radius:50%;border:4px solid var(--ink);background:#FFF6EE;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#B54A22"><span class="num" style="font-size:26px;line-height:.9">SETTLED</span><span class="mono" style="font-size:9px">${esc(G.place.toUpperCase())} · ${G.end + 2} DEC</span></div>
+  <div class="slam" style="position:absolute;right:22px;top:calc(250px + env(safe-area-inset-top,0px));animation-delay:.9s;width:104px;height:104px;border-radius:50%;border:4px solid var(--ink);background:#FFF6EE;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#B54A22">${BR.ticket({w:56,tilt:0,fill:'#E16A3D',ink:'#FFF6EE'})}<span class="num" style="font-size:18px;line-height:.9;margin-top:3px">SETTLED</span><span class="mono" style="font-size:9px">${esc(G.place.toUpperCase())} · ${rangeTxt().toUpperCase()}</span></div>
   <div class="sticker floaty" style="left:22px;top:calc(270px + env(safe-area-inset-top,0px))">${burst('#FFA45D', 54)}</div>
   <div style="margin-top:auto;padding:0 20px;display:flex;flex-direction:column;gap:8px;position:relative;color:#fff">
     <span class="over">Each, all in</span>
@@ -1013,21 +1033,58 @@ SCREENS.square = () => { const each = Math.round(balances().tot / Math.max(1, G.
   <div class="foot" style="background:transparent"><button class="btn" data-go="feedback" data-how="up">Tell Parth what you think ${ic('star','s')}</button><button class="link" id="again" style="color:#fff">Start again</button></div></div>`,
   after(el){ setTimeout(() => confetti(el), 1100); rollOdo(el.querySelector('#sodo'), each, 400); el.querySelector('#again').onclick = () => location.reload(); }}; };
 
+/* All In brand marks — pop style */
+const BR = (() => {
+  let n = 0;
+  // ticket mark: glossy rounded stub with notches at the tear line. "all" | "in"
+  const ticket = ({fill = '#FFA45D', ink = '#10262E', w = 120, tilt = -8, cls = '', label = true} = {}) => { const id = 'bt' + (++n);
+    return `<svg class="br-ticket ${cls}" width="${w}" viewBox="-6 -6 212 122" aria-label="All In" role="img" style="overflow:visible">
+    <defs><clipPath id="${id}"><path d="M20 4H118a14 14 0 0 0 28 0H180a16 16 0 0 1 16 16V90a16 16 0 0 1-16 16H146a14 14 0 0 0-28 0H20A16 16 0 0 1 4 90V20A16 16 0 0 1 20 4Z"/></clipPath></defs>
+    <g transform="rotate(${tilt} 100 55)">
+      <path d="M20 4H118a14 14 0 0 0 28 0H180a16 16 0 0 1 16 16V90a16 16 0 0 1-16 16H146a14 14 0 0 0-28 0H20A16 16 0 0 1 4 90V20A16 16 0 0 1 20 4Z" fill="${fill}"/>
+      <g clip-path="url(#${id})"><rect x="0" y="0" width="200" height="40" fill="#fff" opacity=".22"/><rect x="0" y="98" width="200" height="12" fill="${ink}" opacity=".10"/></g>
+      <line x1="132" y1="24" x2="132" y2="86" stroke="${ink}" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 10" opacity=".85"/>
+      ${label ? `<text x="68" y="71" text-anchor="middle" font-family="Outfit, system-ui, sans-serif" font-weight="800" font-size="46" letter-spacing="-2" fill="${ink}">all</text>
+      <text x="166" y="71" text-anchor="middle" font-family="Outfit, system-ui, sans-serif" font-weight="800" font-size="46" letter-spacing="-2" fill="${ink}">in</text>` : ''}
+    </g></svg>`; };
+  // app icon tile
+  const icon = (size = 96, {bg = '#10262E', fill = '#FFA45D', ink = '#10262E', cls = ''} = {}) =>
+    `<span class="br-icon ${cls}" style="width:${size}px;height:${size}px;border-radius:${size * .28}px;background:${bg}">${ticket({fill, ink, w: size * .78, tilt: -10})}</span>`;
+  // wordmark: the dot on the i is a tiny ticket
+  const word = (size = 22, color = '#10262E', dot = '#FFA45D') =>
+    `<span class="br-word" style="font-size:${size}px;color:${color}">all <span class="br-i">ı<i style="background:${dot}"></i></span>n</span>`;
+  const lockup = (size = 22, color = '#10262E', o = {}) => `<span class="br-lock">${icon(size * 1.55, o)}${word(size, color, o.dot)}</span>`;
+  const css = `.br-icon{display:inline-grid;place-items:center;flex:none;position:relative;box-shadow:0 18px 28px -14px rgba(16,38,46,.45),0 6px 10px -6px rgba(16,38,46,.25),inset 0 1.5px 0 rgba(255,255,255,.25),inset 0 -3px 0 rgba(0,0,0,.18)}
+.br-ticket{display:block;filter:drop-shadow(0 6px 6px rgba(16,38,46,.28))}
+.br-word{font-family:Outfit,system-ui,sans-serif;font-weight:800;letter-spacing:-.045em;line-height:1;white-space:nowrap;display:inline-block}
+.br-i{position:relative;display:inline-block}.br-i i{position:absolute;left:50%;top:.02em;width:.3em;height:.17em;border-radius:.05em;transform:translateX(-46%) rotate(-14deg);box-shadow:0 .03em .04em rgba(16,38,46,.25)}.br-i i::after{content:"";position:absolute;left:58%;top:18%;bottom:18%;border-left:.025em dotted rgba(16,38,46,.55)}
+.br-lock{display:inline-flex;align-items:center;gap:.5em}
+@keyframes brDrop{0%{opacity:0;transform:translateY(-120px) rotate(-30deg)}60%{opacity:1;transform:translateY(8px) rotate(4deg)}80%{transform:translateY(-3px) rotate(-1deg)}100%{opacity:1;transform:none}}
+@keyframes brTear{0%,100%{transform:none}40%{transform:rotate(-7deg) translateX(-2px)}70%{transform:rotate(3deg)}}
+@keyframes brShine{0%,60%{transform:translateX(-140%) skewX(-20deg)}100%{transform:translateX(240%) skewX(-20deg)}}
+.br-anim .br-ticket{animation:brDrop .8s cubic-bezier(.3,1.3,.5,1) both .15s}
+.br-icon.shine{overflow:hidden}.br-icon.shine::after{content:"";position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);animation:brShine 3.6s ease-in-out infinite 1.2s}
+.br-wig{animation:brTear 2.8s ease-in-out infinite}`;
+  return {ticket, icon, word, lockup, css};
+})();
+
+document.head.insertAdjacentHTML('beforeend', `<style>${BR.css}</style>`);
+
 /* ===== v3 screens in the pop style, with the full motion kit ===== */
 const LOGO_TILE = '<svg viewBox="0 0 228 106" aria-hidden="true"><g transform="rotate(-4 114 53)"><path d="M14 3H206a14 14 0 0 1 14 14V37a16 16 0 0 0 0 32V89a14 14 0 0 1-14 14H14A14 14 0 0 1 0 89V69a16 16 0 0 0 0-32V17A14 14 0 0 1 14 3Z" fill="#FFA45D" stroke="#fff" stroke-width="6"/><line x1="140" y1="16" x2="140" y2="90" stroke="#10262E" stroke-width="6" stroke-dasharray="8 7"/><text x="72" y="78" text-anchor="middle" font-family="Big Shoulders Display, Impact, sans-serif" font-weight="900" font-size="64" fill="#10262E" textLength="104" lengthAdjust="spacingAndGlyphs">ALL</text><text x="180" y="78" text-anchor="middle" font-family="Big Shoulders Display, Impact, sans-serif" font-weight="900" font-size="64" fill="#10262E" textLength="56" lengthAdjust="spacingAndGlyphs">IN</text></g></svg>';
-const wordmark = (c = 'var(--ink)') => `<div style="font-weight:800;font-size:19px;letter-spacing:-.03em;color:${c}">all<span style="display:inline-block;width:2px;height:14px;margin:0 3px;background:currentColor;opacity:.6;vertical-align:-1px"></span>in</div>`;
+const wordmark = (c = '#10262E') => BR.word(22, c, '#FFA45D');
 
-SCREENS.splash = () => ({bg:'var(--tang)', html:`<div style="flex:1;display:grid;place-items:center"><div class="tile pop" style="width:96px;height:96px;border-radius:28px"><span style="width:66px;display:block">${LOGO_TILE}</span></div></div>`,
+SCREENS.splash = () => ({bg:'var(--tang)', html:`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px" class="br-anim">${BR.icon(112,{cls:'shine'})}<div style="opacity:0;animation:brDrop .6s cubic-bezier(.3,1.3,.5,1) .5s both">${BR.word(40,'#10262E','#fff')}</div></div>`,
   after(){ setTimeout(() => nav('welcome', null, 'fade'), reduce ? 300 : 1100); }});
 
 SCREENS.welcome = () => ({bg:'var(--tang)', html:`<div class="bigcard" style="align-items:center;text-align:center;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 0">
-  <div class="drop" style="animation-delay:.05s">${wordmark()}</div>
+  <div class="drop" style="animation-delay:.05s">${BR.word(24,"#10262E","#fff")}</div>
   <div style="position:relative;width:100%;height:220px;margin-top:8px">
     <div class="gc drop" style="top:6px;background:#fff;--r:-5deg;animation-delay:.25s"><span class="av" style="background:var(--sea);color:#fff">A</span><span>Aman<span class="sub">₹5,000</span></span><span class="pl slam" style="animation-delay:.9s">Paid</span></div>
     <div class="gc drop" style="top:68px;background:var(--mint);--r:2deg;animation-delay:.45s"><span class="av" style="background:var(--tang)">P</span><span>Priya<span class="sub">₹5,000</span></span><span class="pl slam" style="animation-delay:1.1s">Paid</span></div>
     <div class="gc drop" style="top:130px;background:var(--sea);color:#fff;--r:-2deg;animation-delay:.65s"><span class="av" style="background:#fff;color:var(--ink)">K</span><span>Karan<span class="sub strike" style="--sd:1.5s">maybe</span></span><span class="pl slam" style="background:#fff;color:var(--pine);animation-delay:1.9s">Paid</span></div>
   </div>
-  <div class="tile pop" style="animation-delay:.2s;margin-top:-4px"><span style="width:44px;display:block">${LOGO_TILE}</span></div>
+  <div class="pop" style="animation-delay:.2s;margin-top:-4px">${BR.icon(66,{cls:"shine"})}</div>
   <div class="ticks" style="margin:14px 0 10px"><i class="on"></i><i></i><i></i></div>
   <h1 class="h1" style="font-size:36px;margin:0">${words('Stop chasing.', .5, .08)}<br>${words('Lock the trip.', .75, .08)}</h1>
   <p class="sub rise" style="--d:12;color:var(--ink);opacity:.85;margin:10px 8px 0;font-size:14.5px">Friends say “I’m in” by paying their share. Not enough by the date? Everyone gets it back.</p>
@@ -1048,7 +1105,7 @@ SCREENS.locked = () => { const amt = collected().toLocaleString('en-IN');
     <div class="phf drop" style="right:2%;top:6px;width:44%;height:120px;--r:7deg;animation-delay:.5s"><img src="${IMG.palolem}" alt=""></div>
     <div class="gc drop" style="left:4%;right:4%;top:160px;background:#fff;color:var(--ink);--r:-2deg;animation-delay:.8s"><span class="av" style="background:var(--tang)">₹</span><span style="flex:1">Released to the organisers<span class="sub">to book the stay, anywhere</span></span><span class="num" style="font-size:22px" id="potv">₹0</span></div>
     <span class="fchip slam" style="left:6%;top:228px;background:var(--tang);animation-delay:1.4s">${G.inList.length} of ${total()} paid</span>
-    <div class="slam" style="position:absolute;right:4%;top:214px;animation-delay:1.7s;width:84px;height:84px;border-radius:50%;border:3px solid var(--tang);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--tang);background:rgba(4,62,82,.6)"><span class="num" style="font-size:16px;line-height:.9;letter-spacing:.02em">LOCKED</span><span style="font-size:8px;font-weight:700">${esc(G.place.toUpperCase())} ’26</span></div>
+    <div class="slam" style="position:absolute;right:4%;top:214px;animation-delay:1.7s;width:84px;height:84px;border-radius:50%;border:3px solid var(--tang);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--tang);background:rgba(4,62,82,.6)">${BR.ticket({w:54,tilt:0})}<span class="num" style="font-size:13px;line-height:1;letter-spacing:.04em;margin-top:2px">LOCKED</span></div>
   </div>
   <div class="ticks" style="margin:10px 0;position:relative;z-index:2"><i></i><i></i><i class="on"></i></div>
   <h1 class="h1 xl" style="color:#fff;margin:0;position:relative;z-index:2">${words('It’s happening.', .9, .1)}<br>${words(`${G.place} is locked.`, 1.15, .1)}</h1>
@@ -1057,6 +1114,103 @@ SCREENS.locked = () => { const amt = collected().toLocaleString('en-IN');
   after(el){ G.celebrated = true; setTimeout(() => confetti(el), 1500); setTimeout(() => countUp(el.querySelector('#potv'), collected(), 1300), 1000);
     if (!reduce) setTimeout(() => el.querySelectorAll('.phf,.gc').forEach((g, i) => { if (g.isConnected){ g.classList.add('hov'); g.style.animationDelay = (-i * 1.7) + 's'; } }), 1800);
     el.querySelector('#go').onclick = () => nav('home', null, 'reset'); }}; };
+
+/* ===== v4: brand everywhere, trip-date calendar, swipe to end the trip ===== */
+G.sd = G.sd || '2026-12-12'; G.ed = G.ed || '2026-12-15';
+const dOf = iso => new Date(iso + 'T00:00:00');
+const isoOf = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const nDays = () => Math.round((dOf(G.ed) - dOf(G.sd)) / 864e5) + 1;
+const monS = iso => dOf(iso).toLocaleDateString('en-IN', {month:'short'});
+const rangeTxt = () => monS(G.sd) === monS(G.ed) ? `${dOf(G.sd).getDate()}–${dOf(G.ed).getDate()} ${monS(G.ed)}` : `${dOf(G.sd).getDate()} ${monS(G.sd)} – ${dOf(G.ed).getDate()} ${monS(G.ed)}`;
+const fmtD = iso => dOf(iso).toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short'});
+const setRange = (a, b) => { G.sd = a; G.ed = b; G.start = dOf(a).getDate(); G.end = dOf(b).getDate();
+  const maxJ = new Date(dOf(a) - 864e5); if (dOf(G.joinBy) > maxJ) { const j = new Date(dOf(a) - 7 * 864e5); const min = dOf('2026-11-06'); G.joinBy = isoOf(j < min ? min : j); } };
+
+/* range calendar for the trip dates */
+function rangePick(onPick){
+  let view = dOf(G.sd); view.setDate(1); let a = G.sd, b = G.ed, picking = 'start'; const min = '2026-11-06';
+  sheet(`<div class="row sp"><h2 style="margin:0;letter-spacing:-.02em">When’s the trip?</h2><span class="small muted" id="rh">Tap the first day</span></div>
+    <div class="card" style="padding:12px 8px"><div class="row sp" style="padding:0 6px 8px"><button class="back" id="cp" aria-label="Previous month" style="width:40px;height:40px">${ic('left')}</button><span class="city2" id="cm" style="font-size:22px"></span><button class="back" id="cn" aria-label="Next month" style="width:40px;height:40px">${ic('right')}</button></div><div class="cal rcal" id="cg"></div></div>
+    <div class="note" id="cs" style="font-weight:600"></div><button class="btn" id="cok">Set these dates</button>`, (s, close) => {
+    const draw = () => { s.querySelector('#cm').textContent = view.toLocaleDateString('en-IN', {month:'long', year:'numeric'});
+      const first = (view.getDay() + 6) % 7, dim = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate();
+      let h = ['M','T','W','T','F','S','S'].map(d => `<span class="w">${d}</span>`).join('') + '<span></span>'.repeat(first);
+      for (let d = 1; d <= dim; d++){ const v = isoOf(new Date(view.getFullYear(), view.getMonth(), d)); const off = v < min;
+        const cls = v === a ? 'start' : v === b ? 'end' : (b && v > a && v < b) ? 'in' : '';
+        h += `<button data-v="${v}" class="${cls}" ${off ? 'disabled style="color:#B6C3C5"' : ''}>${d}</button>`; }
+      s.querySelector('#cg').innerHTML = h;
+      const n = b ? Math.round((dOf(b) - dOf(a)) / 864e5) + 1 : 1;
+      s.querySelector('#cs').innerHTML = `${ic('cal')} ${fmtD(a)}${b ? ' – ' + fmtD(b) : ''} · ${n} day${n > 1 ? 's' : ''}`;
+      s.querySelector('#rh').textContent = picking === 'start' ? 'Tap the first day' : 'Now tap the last day';
+      s.querySelector('#cok').disabled = !b;
+      s.querySelectorAll('#cg [data-v]').forEach(x => x.onclick = () => { const v = x.dataset.v;
+        if (picking === 'start' || v < a){ a = v; b = null; picking = 'end'; } else { b = v; picking = 'start'; }
+        draw(); const t = s.querySelector(`[data-v="${v}"]`); t && t.animate([{transform:'scale(.6)'},{transform:'scale(1.12)'},{transform:'none'}], {duration:320, easing:'cubic-bezier(.3,1.6,.5,1)'}); }); };
+    s.querySelector('#cp').onclick = () => { view.setMonth(view.getMonth() - 1); draw(); }; s.querySelector('#cn').onclick = () => { view.setMonth(view.getMonth() + 1); draw(); };
+    s.querySelector('#cok').onclick = () => { if (!b) return; onPick(a, b); close(); }; draw(); });
+}
+
+/* create: place + a real calendar for dates */
+SCREENS.create = () => ({html:`${head({over:'New trip · 1 of 2', title:'Where and when?'})}
+  <div class="scroll"><div class="pad">
+  <label class="lbl" for="pl">Place</label><input class="field" id="pl" value="${esc(G.place)}">
+  <div class="chips">${Object.keys(PLACES).map(k => `<button class="chip ${G.place === k ? 'on' : ''}" data-p="${k}">${k}</button>`).join('')}</div>
+  <div class="post rise" id="pc" style="--d:1">${postcardMini(G.place)}</div>
+  <span class="lbl">Dates</span>
+  <button class="datebtn rise" id="dbtn" style="--d:2"><span class="dcal"><b id="dmon">${monS(G.sd).toUpperCase()}</b><span id="dday">${dOf(G.sd).getDate()}</span></span><span class="grow" style="text-align:left"><b id="drange" style="display:block;font-size:17px">${fmtD(G.sd)} – ${fmtD(G.ed)}</b><span class="small muted" id="dn">${nDays()} days · tap to change</span></span>${ic('cal')}</button>
+  <div class="chips" id="quick"><span class="small muted" style="align-self:center">Quick:</span>${[['2026-12-12','2026-12-15','12–15 Dec'],['2026-12-19','2026-12-22','19–22 Dec'],['2026-12-30','2027-01-02','New Year']].map(([x, y, t]) => `<button class="chip ${G.sd === x && G.ed === y ? 'on' : ''}" data-a="${x}" data-b="${y}">${t}</button>`).join('')}</div>
+  </div></div><div class="foot"><button class="btn" id="nx">Next: who and how much ${ic('right')}</button></div>`,
+  after(el){ const f = el.querySelector('#pl');
+    const setP = k => { G.place = k; f.value = k; el.querySelectorAll('[data-p]').forEach(c => c.classList.toggle('on', c.dataset.p === k)); const pc = el.querySelector('#pc'); pc.innerHTML = postcardMini(k); pc.animate([{opacity:.2, transform:'translateY(10px) rotate(-1deg)'},{opacity:1, transform:'none'}], 350); };
+    el.querySelectorAll('[data-p]').forEach(c => c.onclick = () => setP(c.dataset.p));
+    f.oninput = () => { G.place = f.value.trim() || 'Goa'; };
+    const paint = () => { el.querySelector('#dmon').textContent = monS(G.sd).toUpperCase(); el.querySelector('#dday').textContent = dOf(G.sd).getDate();
+      el.querySelector('#drange').textContent = `${fmtD(G.sd)} – ${fmtD(G.ed)}`; el.querySelector('#dn').textContent = `${nDays()} days · tap to change`;
+      el.querySelectorAll('#quick [data-a]').forEach(c => c.classList.toggle('on', c.dataset.a === G.sd && c.dataset.b === G.ed));
+      el.querySelector('#dbtn').animate([{transform:'scale(.96) rotate(-1deg)'},{transform:'scale(1.02)'},{transform:'none'}], {duration:380, easing:'cubic-bezier(.3,1.5,.5,1)'}); };
+    el.querySelector('#dbtn').onclick = () => rangePick((a, b) => { setRange(a, b); paint(); });
+    el.querySelectorAll('#quick [data-a]').forEach(c => c.onclick = () => { setRange(c.dataset.a, c.dataset.b); paint(); });
+    el.querySelector('#nx').onclick = () => nav('create2'); }});
+
+/* swipe to end the trip */
+function swipeEnd(el, onDone){ const tr = el.querySelector('.swipe'); if (!tr) return; const th = tr.querySelector('.thumb'), fill = tr.querySelector('.sfill'), lab = tr.querySelector('.slab');
+  let x0 = null, dx = 0, max = 0;
+  const set = v => { th.style.transform = `translateX(${v}px) rotate(${-10 + v / max * 10}deg)`; fill.style.width = (v + 60) + 'px'; lab.style.opacity = Math.max(0, 1 - v / (max * .6)); };
+  const down = e => { max = tr.clientWidth - th.offsetWidth - 8; x0 = (e.touches ? e.touches[0] : e).clientX - dx; th.style.transition = fill.style.transition = 'none'; tr.classList.add('drag'); e.preventDefault(); };
+  const move = e => { if (x0 === null) return; dx = Math.max(0, Math.min(max, (e.touches ? e.touches[0] : e).clientX - x0)); set(dx); };
+  const up = () => { if (x0 === null) return; x0 = null; tr.classList.remove('drag');
+    if (dx > max * .86){ set(max); tr.classList.add('done'); lab.textContent = 'Trip ended'; lab.style.opacity = 1; if (navigator.vibrate) navigator.vibrate(30); setTimeout(onDone, 450); }
+    else { th.style.transition = fill.style.transition = 'transform .5s cubic-bezier(.3,1.5,.5,1), width .5s cubic-bezier(.3,1.5,.5,1)'; dx = 0; set(0); } };
+  th.addEventListener('mousedown', down); th.addEventListener('touchstart', down, {passive:false});
+  window.addEventListener('mousemove', move); window.addEventListener('touchmove', move, {passive:false});
+  window.addEventListener('mouseup', up); window.addEventListener('touchend', up);
+  th.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); max = tr.clientWidth - th.offsetWidth - 8; dx = max; up(); } });
+  th.addEventListener('click', () => { if (dx === 0) th.animate([{transform:'translateX(0) rotate(-10deg)'},{transform:'translateX(26px) rotate(-6deg)'},{transform:'translateX(0) rotate(-10deg)'}], {duration:500, easing:'cubic-bezier(.3,1.5,.5,1)'}); });
+}
+const swipeHTML = () => `<div class="endcard rise" style="--d:3"><div class="row sp" style="margin-bottom:10px"><div><b style="font-size:16px">Back home?</b><div class="small muted">Ends trip mode for all ${G.inList.length}. The album and money stay.</div></div></div>
+  <div class="swipe" role="group" aria-label="Swipe to end the trip"><span class="sfill"></span><span class="slab">Swipe to end the trip ${ic('right','s')}</span><button class="thumb" aria-label="Swipe to end the trip. Press Enter to end.">${BR.ticket({w:54, tilt:0, label:false})}</button></div></div>`;
+
+const _live = SCREENS.live;
+SCREENS.live = () => { const o = _live(); o.html = o.html.replace('</div></div><nav', `${swipeHTML()}</div></div><nav`);
+  const af = o.after; o.after = el => { af(el); swipeEnd(el, () => { G.ended = true; nav('wrapped', null, 'up'); }); }; return o; };
+
+/* the trip is over: a wrap moment, then settle */
+SCREENS.wrapped = () => { const ph = allPhotos().length + 1242, tot = balances().tot;
+  return {bg:'var(--sea)', html:`<div class="bigcard spot" style="color:#fff;align-items:center;text-align:center;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 0"><div class="grain"></div>
+  <div class="drop" style="position:relative;z-index:2">${BR.word(22, '#fff')}</div>
+  <div style="position:relative;width:100%;height:250px;z-index:2">
+    <div class="phf drop" style="left:3%;top:20px;width:44%;height:120px;--r:-8deg;animation-delay:.25s"><img src="${IMG.scooters}" alt=""></div>
+    <div class="phf drop" style="right:3%;top:8px;width:44%;height:124px;--r:6deg;animation-delay:.4s"><img src="${IMG.thali}" alt=""></div>
+    <div class="drop" style="position:absolute;left:50%;top:118px;margin-left:-70px;animation-delay:.7s;--r:-6deg">${BR.ticket({w:140, fill:'#fff'})}</div>
+    <span class="fchip slam" style="left:6%;top:206px;background:var(--tang);animation-delay:1.2s">${nDays()} days</span>
+    <span class="fchip slam" style="right:6%;top:200px;animation-delay:1.4s">${ph.toLocaleString('en-IN')} photos</span>
+  </div>
+  <div class="ticks" style="margin:6px 0 10px;position:relative;z-index:2"><i></i><i></i><i class="on"></i></div>
+  <h1 class="h1 xl" style="color:#fff;margin:0;position:relative;z-index:2">${words('That’s a wrap,', .8, .1)}<br>${words(G.place + '.', 1.05, .1)}</h1>
+  <p class="rise" style="--d:14;position:relative;z-index:2;margin:10px 6px 0;font-size:15px;opacity:.92">${G.inList.length} of you, ${rs(tot)} spent, every rupee visible. One last step: settle up.</p>
+  <div class="foot" style="background:transparent;width:100%;margin-top:auto;padding-left:0;padding-right:0;position:relative;z-index:2"><button class="btn rise" style="--d:16;background:#fff;color:var(--ink)" data-go="settle">Settle up ${ic('right')}</button><button class="link rise" style="--d:17;color:#fff" data-go="memories">Open the album</button></div></div>`,
+  after(el){ setTimeout(() => confetti(el), 1300); if (!reduce) setTimeout(() => el.querySelectorAll('.phf').forEach((g, i) => { if (g.isConnected){ g.classList.add('hov'); g.style.animationDelay = (-i * 1.7) + 's'; } }), 1600); }}; };
+SCREENS.trip = () => G.ended ? SCREENS.wrapped() : G.live ? SCREENS.live() : SCREENS.home();
 
 nav('splash', null, 'fade');
 })();
