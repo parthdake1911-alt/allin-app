@@ -421,14 +421,15 @@ body{font-family:var(--body)}
 /* spotlight sweep: the beam swings left to right, jerks, and stops in the middle; the headline lights up only then */
 .spot::after{transform-origin:50% 0;width:52%;height:72%}
 .spot::before{animation:spotGlow 2.8s cubic-bezier(.45,0,.25,1) .25s both,spotpulse 6s ease-in-out 2.9s infinite}
-.spot::after{animation:spotSwing 2.8s cubic-bezier(.45,0,.25,1) .25s both}
+.spot::after{animation:none!important;transform:translateX(-50%) rotate(var(--sa,0deg))!important}
 @keyframes spotGlow{0%{transform:translateX(-95%);opacity:.55}42%{transform:translateX(-5%)}66%{transform:translateX(-54%)}76%{transform:translateX(-47%)}86%{transform:translateX(-51%)}100%{transform:translateX(-50%);opacity:1}}
 @keyframes spotSwing{0%{transform:translateX(-50%) rotate(34deg);opacity:.55}42%{transform:translateX(-50%) rotate(-32deg)}66%{transform:translateX(-50%) rotate(6deg)}76%{transform:translateX(-50%) rotate(-3deg)}86%{transform:translateX(-50%) rotate(1deg)}100%{transform:translateX(-50%) rotate(0);opacity:1}}
-.bigcard.spot .h1{animation:spotText 2.8s cubic-bezier(.45,0,.25,1) .25s both}
+.bigcard.spot .h1{animation:none}
 @keyframes spotText{0%{opacity:.07}20%{opacity:.28}38%{opacity:.08}63%{opacity:.14}70%{opacity:1;text-shadow:0 0 34px rgba(255,236,214,.75)}80%{opacity:.82}88%{opacity:1}100%{opacity:1;text-shadow:0 0 0 rgba(255,236,214,0)}}
 .spot::after{background:linear-gradient(rgba(255,236,214,.42),rgba(255,236,214,.03))!important}
 .spot::before{background:radial-gradient(ellipse 45% 70% at 50% 0%,rgba(255,236,214,.46),rgba(255,236,214,.1) 55%,transparent 75%)!important}
 @media (prefers-reduced-motion:reduce){.spot::before,.spot::after,.bigcard.spot .h1{animation:none!important}}
+.spot::before{display:none!important}
 </style>
 
 <div class="stage"><div class="device" id="dev"></div></div>
@@ -1296,6 +1297,36 @@ SCREENS.square = () => { const each = Math.round(balances().tot / Math.max(1, G.
   <div class="foot" style="background:transparent;width:100%;margin-top:auto;padding-left:0;padding-right:0;position:relative;z-index:2"><button class="btn rise" style="--d:12;background:#fff;color:var(--ink)" data-go="feedback" data-how="up">Tell Parth what you think ${ic('star','s')}</button><button class="link" id="again" style="color:#fff">Start again</button></div></div>`,
   after(el){ setTimeout(() => confetti(el), 1300); rollOdo(el.querySelector('#sodo'), each, 500); el.querySelector('#again').onclick = () => location.reload();
     if (!reduce) setTimeout(() => el.querySelectorAll('.fchip').forEach(g => { if (g.isConnected) g.classList.add('hov'); }), 1900); }}; };
+
+/* spotlight sweep: the beam swings left to right, overshoots, settles in the middle.
+   While it moves, only the part of the headline inside the beam is visible. */
+function spotSweep(root, text, geo, setAngle, done){
+  const T = [0, .42, .66, .76, .86, 1], A = [34, -32, 6, -3, 1, 0], dur = 2800, delay = 250;
+  const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  const ang = p => { for (let i = 0; i < T.length - 1; i++) if (p <= T[i + 1]) { const k = (p - T[i]) / (T[i + 1] - T[i]); return A[i] + (A[i + 1] - A[i]) * ease(k); } return 0; };
+  const clear = () => { text.style.webkitMaskImage = text.style.maskImage = ''; };
+  const mask = (a, out) => { const r = root.getBoundingClientRect(), t = text.getBoundingClientRect(); if (!r.width || !t.width) return;
+    const px = r.left + r.width / 2 - t.left, py = r.top - t.top, yc = Math.max(40, t.top + t.height / 2 - r.top);
+    const slope = geo.slope * r.width / r.height, half = Math.atan((geo.top * r.width + yc * slope) / yc) * 180 / Math.PI, c = 180 + a;
+    const m = `conic-gradient(from 0deg at ${px.toFixed(1)}px ${py.toFixed(1)}px, rgba(0,0,0,${out}) ${(c - half - 4).toFixed(2)}deg, #000 ${(c - half + 3).toFixed(2)}deg, #000 ${(c + half - 3).toFixed(2)}deg, rgba(0,0,0,${out}) ${(c + half + 4).toFixed(2)}deg)`;
+    text.style.webkitMaskImage = text.style.maskImage = m; };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { setAngle(0); clear(); done && done(); return; }
+  if (text._sweep) cancelAnimationFrame(text._sweep);
+  const t0 = performance.now() + delay;
+  setAngle(A[0]); mask(A[0], .03);
+  const frame = now => { if (!root.isConnected) return; const p = (now - t0) / dur;
+    if (p < 1) { const a = p < 0 ? A[0] : ang(p); setAngle(a); mask(a, .03); text._sweep = requestAnimationFrame(frame); return; }
+    setAngle(0); const f0 = now;
+    const flash = n => { const k = Math.min(1, (n - f0) / 320); mask(0, .03 + .97 * k); if (k < 1) text._sweep = requestAnimationFrame(flash); else { clear(); text._sweep = null; done && done(); } };
+    text._sweep = requestAnimationFrame(flash); };
+  text._sweep = requestAnimationFrame(frame);
+}
+/* hook the sweep into the three spotlight screens */
+['locked', 'wrapped', 'square'].forEach(name => { const f = SCREENS[name]; if (!f) return;
+  SCREENS[name] = (...args) => { const o = f(...args); const af = o.after;
+    o.after = el => { af && af(el); const sp = el.querySelector('.bigcard.spot'), h = sp && sp.querySelector('.h1');
+      if (sp && h) spotSweep(sp, h, {top: .0624, slope: .1976 / .72}, a => sp.style.setProperty('--sa', a.toFixed(2) + 'deg'), () => h.animate([{textShadow:'0 0 34px rgba(255,236,214,.8)'},{textShadow:'0 0 0 rgba(255,236,214,0)'}], {duration:700, easing:'ease-out'})); };
+    return o; }; });
 
 nav('splash', null, 'fade');
 })();
