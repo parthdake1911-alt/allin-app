@@ -1265,6 +1265,27 @@ SCREENS.wrapped = () => { const ph = allPhotos().length + 1242, tot = balances()
   after(el){ setTimeout(() => confetti(el), 1300); if (!reduce) setTimeout(() => el.querySelectorAll('.phf').forEach((g, i) => { if (g.isConnected){ g.classList.add('hov'); g.style.animationDelay = (-i * 1.7) + 's'; } }), 1600); }}; };
 SCREENS.trip = () => G.ended ? SCREENS.wrapped() : G.live ? SCREENS.live() : SCREENS.home();
 
+/* all square, in the pop style (replaces the v1-era screen) */
+const ribbonPop = (id, d, text, fill, ink, dur) => `<path id="${id}" d="${d}" fill="none" stroke="${fill}" stroke-width="46" stroke-linecap="round"/><text font-family="Outfit, system-ui, sans-serif" font-weight="800" font-size="20" letter-spacing="1" fill="${ink}" dy="7"><textPath href="#${id}" startOffset="0">${text.repeat(6)}<animate attributeName="startOffset" from="0" to="-${text.length * 13}" dur="${dur}s" repeatCount="indefinite"/></textPath></text>`;
+SCREENS.square = () => { const each = Math.round(balances().tot / Math.max(1, G.inList.length)).toLocaleString('en-IN');
+  return {bg:'var(--sunset)', html:`<div class="bigcard spot" style="color:#fff;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 0;align-items:center;text-align:center"><div class="grain"></div>
+  <div class="drop" style="position:relative;z-index:2">${BR.word(22, '#fff', '#FFA45D')}</div>
+  <div style="position:relative;width:calc(100% + 40px);margin:0 -20px;height:230px;z-index:2">
+    <svg class="drop" viewBox="0 0 360 200" preserveAspectRatio="xMidYMid slice" style="position:absolute;left:0;top:6px;width:100%;height:190px;filter:drop-shadow(0 14px 14px rgba(16,38,46,.28));animation-delay:.25s" aria-hidden="true">${ribbonPop('sq2', 'M-40 150 C 60 70, 140 190, 220 110 S 360 40, 420 80', 'SETTLED ✦ ALL SQUARE ✦ ', '#FFF6EE', '#10262E', 9)}</svg>
+    <div class="slam" style="position:absolute;right:26px;top:132px;animation-delay:1s;--r:-12deg;width:104px;height:104px;border-radius:50%;background:#FFF6EE;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--sunset);box-shadow:var(--float),var(--gloss)">${BR.ticket({w:58, tilt:0, fill:'#E16A3D', ink:'#FFF6EE'})}<b style="font-size:14px;letter-spacing:.06em;margin-top:3px">SETTLED</b><span style="font-size:9px;font-weight:700;opacity:.8">${esc(G.place.toUpperCase())} · ${rangeTxt().toUpperCase()}</span></div>
+    <span class="fchip drop" style="left:26px;top:170px;--r:-8deg;animation-delay:1.3s">0 reminders from Neha</span>
+  </div>
+  <div class="ticks" style="margin:4px 0 10px;position:relative;z-index:2"><i></i><i></i><i class="on"></i></div>
+  <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:8px">
+    <span class="over" style="color:#fff;opacity:.9">Each, all in</span>
+    <div class="row" style="gap:6px;align-items:flex-end;color:var(--ink)"><span class="num" style="font-size:44px;line-height:1;color:#fff">₹</span>${odo(each, 'sodo', 60, 42)}</div>
+    <h1 class="h1 xl" style="color:#fff;margin:6px 0 0">${words('All square!', .5, .12)}</h1>
+    <p class="rise" style="--d:10;margin:0 8px;font-size:15px;opacity:.92">${G.inList.length} paid to lock it. ${G.bookings.length} booking${G.bookings.length === 1 ? '' : 's'}, ${G.spends.length} spend${G.spends.length === 1 ? '' : 's'}, every rupee visible.</p>
+  </div>
+  <div class="foot" style="background:transparent;width:100%;margin-top:auto;padding-left:0;padding-right:0;position:relative;z-index:2"><button class="btn rise" style="--d:12;background:#fff;color:var(--ink)" data-go="feedback" data-how="up">Tell Parth what you think ${ic('star','s')}</button><button class="link" id="again" style="color:#fff">Start again</button></div></div>`,
+  after(el){ setTimeout(() => confetti(el), 1300); rollOdo(el.querySelector('#sodo'), each, 500); el.querySelector('#again').onclick = () => location.reload();
+    if (!reduce) setTimeout(() => el.querySelectorAll('.fchip').forEach(g => { if (g.isConnected) g.classList.add('hov'); }), 1900); }}; };
+
 nav('splash', null, 'fade');
 })();
 </script>
