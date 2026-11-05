@@ -418,6 +418,17 @@ body{font-family:var(--body)}
 .wseats span.in{border:0;box-shadow:var(--gloss),0 4px 8px -4px rgba(16,38,46,.4)}
 .wseats .wline{position:absolute;left:calc(75% - 4px);top:-6px;bottom:-6px;width:2.5px;border-radius:2px;background:var(--sunset)}
 .wseal{width:44px;height:44px;border-radius:50%;background:var(--tang);display:grid;place-items:center;font-weight:800;font-size:14px;transform:rotate(-10deg);box-shadow:var(--gloss);flex:none}
+/* spotlight sweep: the beam swings left to right, jerks, and stops in the middle; the headline lights up only then */
+.spot::after{transform-origin:50% 0;width:52%;height:72%}
+.spot::before{animation:spotGlow 2.8s cubic-bezier(.45,0,.25,1) .25s both,spotpulse 6s ease-in-out 2.9s infinite}
+.spot::after{animation:spotSwing 2.8s cubic-bezier(.45,0,.25,1) .25s both}
+@keyframes spotGlow{0%{transform:translateX(-95%);opacity:.55}42%{transform:translateX(-5%)}66%{transform:translateX(-54%)}76%{transform:translateX(-47%)}86%{transform:translateX(-51%)}100%{transform:translateX(-50%);opacity:1}}
+@keyframes spotSwing{0%{transform:translateX(-50%) rotate(34deg);opacity:.55}42%{transform:translateX(-50%) rotate(-32deg)}66%{transform:translateX(-50%) rotate(6deg)}76%{transform:translateX(-50%) rotate(-3deg)}86%{transform:translateX(-50%) rotate(1deg)}100%{transform:translateX(-50%) rotate(0);opacity:1}}
+.bigcard.spot .h1{animation:spotText 2.8s cubic-bezier(.45,0,.25,1) .25s both}
+@keyframes spotText{0%{opacity:.07}20%{opacity:.28}38%{opacity:.08}63%{opacity:.14}70%{opacity:1;text-shadow:0 0 34px rgba(255,236,214,.75)}80%{opacity:.82}88%{opacity:1}100%{opacity:1;text-shadow:0 0 0 rgba(255,236,214,0)}}
+.spot::after{background:linear-gradient(rgba(255,236,214,.42),rgba(255,236,214,.03))!important}
+.spot::before{background:radial-gradient(ellipse 45% 70% at 50% 0%,rgba(255,236,214,.46),rgba(255,236,214,.1) 55%,transparent 75%)!important}
+@media (prefers-reduced-motion:reduce){.spot::before,.spot::after,.bigcard.spot .h1{animation:none!important}}
 </style>
 
 <div class="stage"><div class="device" id="dev"></div></div>
@@ -1164,7 +1175,7 @@ SCREENS.locked = () => { const amt = collected().toLocaleString('en-IN');
   <h1 class="h1 xl" style="color:#fff;margin:0;position:relative;z-index:2">${words('It’s happening.', .9, .1)}<br>${words(`${G.place} is locked.`, 1.15, .1)}</h1>
   <div class="avs rise" style="--d:16;justify-content:center;margin-top:12px;position:relative;z-index:2">${G.inList.map(n => avatar(n, 'sm')).join('')}</div>
   <div class="foot" style="background:transparent;width:100%;margin-top:auto;padding-left:0;padding-right:0;position:relative;z-index:2"><button class="btn rise" id="go" style="--d:18;background:#fff;color:var(--ink)">See the trip ${ic('right')}</button></div></div>`,
-  after(el){ G.celebrated = true; setTimeout(() => confetti(el), 1500); setTimeout(() => countUp(el.querySelector('#potv'), collected(), 1300), 1000);
+  after(el){ G.celebrated = true; setTimeout(() => confetti(el), 2300); setTimeout(() => countUp(el.querySelector('#potv'), collected(), 1300), 1000);
     if (!reduce) setTimeout(() => el.querySelectorAll('.phf,.gc').forEach((g, i) => { if (g.isConnected){ g.classList.add('hov'); g.style.animationDelay = (-i * 1.7) + 's'; } }), 1800);
     el.querySelector('#go').onclick = () => nav('home', null, 'reset'); }}; };
 
