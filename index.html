@@ -703,18 +703,19 @@ SCREENS.home = () => {
     <div class="row sp"><span class="small" style="opacity:.9">${locked ? 'Released to the organisers' : 'Join by ' + joinTxt() + ' · closes in'}</span>${locked ? `<span class="pill" style="font-size:15px">${rs(collected())}</span>` : `<div class="countdown"><span id="cd1">6d</span><span id="cd2">23h</span><span id="cd3">59m</span></div>`}</div>
   </div>`}
   ${locked ? '' : `<div class="card rise" style="--d:1;display:flex;flex-direction:column;gap:10px"><div class="row sp"><b>Still waiting on</b><button class="tag peach" id="nudge" style="border:0;font-weight:600">${ic('bell','s')} Nudge all</button></div><div class="avs" id="waiting">${G.gang.filter(n => !G.inList.includes(n)).map(n => `<span class="av sm dash">${esc(n[0])}</span>`).join('')}</div></div>`}
+  ${locked ? '' : whatIfCard()}
   <div class="card rise" style="--d:2;display:flex;flex-direction:column;gap:12px">
     <div class="row sp"><div><b style="font-size:16px">Bookings</b><div class="small muted">Optional · everyone sees what’s booked and the cost</div></div></div>
     ${G.bookings.length ? G.bookings.map(b => `<div class="row" style="gap:12px;align-items:flex-start;padding-top:10px;border-top:1px solid var(--line)"><span style="width:40px;height:40px;border-radius:10px;background:${b.type === 'Stay' ? 'var(--peach)' : 'var(--mint)'};display:grid;place-items:center;flex:none">${ic(b.type === 'Stay' ? 'home' : b.type === 'Travel' ? 'scooter' : 'receipt','s')}</span><div class="grow"><b>${esc(b.t)}</b><div class="small muted">${esc(b.on)} · split ${b.among.length} ways · added by ${esc(b.by)}</div></div><div style="text-align:right"><b>${rs(b.amt)}</b><div class="small" style="color:var(--pine);font-weight:600">${rs(b.amt / b.among.length)} each</div></div></div>`).join('')
       + `<div class="row sp" style="background:var(--mint);border-radius:10px;padding:10px 12px"><span class="small"><b>So far, about</b></span><b>${rs(G.bookings.reduce((a, b) => a + (b.among.includes('Neha') ? b.amt / b.among.length : 0), 0))} each</b></div>`
       : `<div class="note" style="background:var(--bg)">${ic('spark')}<span>Booked a stay or tickets anywhere? Add it here so the gang knows the cost before the trip.</span></div>`}
     <button class="btn sec sm" data-go="addbook">${ic('plus','s')} Add stay or travel</button></div>
-  ${locked ? plansCard() + `<button class="btn sec sm" id="golive">Skip ahead to the trip (demo) ${ic('right','s')}</button>` : ''}
+  ${locked ? plansCard2() + `<button class="btn sec sm" id="golive">Skip ahead to the trip (demo) ${ic('right','s')}</button>` : ''}
   <span class="over">Activity</span><div class="feed" id="feed">${feedHTML()}</div>
   </div></div>${tabs2('trip')}`,
   after(el){
     countUp(el.querySelector('#col'), collected(), 900);
-    el.querySelector('#gangbtn').onclick = gangSheet; if (locked){ startCountdown(el); bindEdges(el); }
+    el.querySelector('#gangbtn').onclick = gangSheet; if (locked) startCountdown(el); bindEdges2(el);
     if (locked && !G.celebrated) setTimeout(() => { if (curEl.querySelector('#seatbox') && !G.celebrated) nav('locked', null, 'fade'); }, 900);
     const nd = el.querySelector('#nudge'); if (nd) nd.onclick = () => { nd.textContent = 'Nudged ✓'; banner('Nudge sent', 'Everyone who hasn’t joined got a reminder.', null, 2400); };
     const gl = el.querySelector('#golive'); if (gl) gl.onclick = () => { G.live = true; if (!G.bookings.length) G.bookings.push({type:'Stay', t:'Casa Palolem villa, 3 nights', on:'Airbnb', amt:28800, among:[...G.inList], by:'Neha'}); if (!G.spends.length) G.spends.push({t:'Dinner at Martin’s', by:'Karan', amt:6400, among:[...G.inList]}, {t:'Scooters, 2 days', by:'Aman', amt:2400, among:[...G.inList]}); nav('trip', null, 'fade'); };
@@ -915,7 +916,7 @@ SCREENS.perks = () => { const f = G.perkCat || 'All'; const list = PERKS.filter(
     el.querySelectorAll('[data-perk]').forEach(b => b.onclick = () => { const p = PERKS.find(x => x.id === b.dataset.perk); perkSheet(p); }); }};
 };
 
-function perkSheet(p){ p = (p && p.id) ? p : PERKS[0]; const on = perkOn(p);
+var perkSheet = function(p){ p = (p && p.id) ? p : PERKS[0]; const on = perkOn(p);
   sheet(`<div class="row" style="gap:14px"><span class="seal" style="width:64px;height:64px;font-size:20px;flex:none;${on ? '' : 'background:#D5DEDF'}">${p.seal}</span><div><span class="over" style="color:var(--sunset-t)">Gang perk · ${on ? 'unlocked' : 'locked'}</span><div class="city2">${p.name}</div><div class="small muted">${p.d} · ${p.km}</div></div></div>
   <div class="card flat" style="display:flex;flex-direction:column;gap:8px"><div class="row sp"><span>Offer</span><b>${p.t}</b></div><div class="row sp"><span>Needs</span><b>${p.min} of you in · you’re ${G.inList.length}</b></div><div class="row sp"><span>How</span><b>Pay the bill in the app</b></div></div>
   <p class="small muted" style="margin:0">${on ? 'The place pays for this discount to fill quiet hours with a big group. You never pay us anything.' : `Get ${p.min - G.inList.length} more ${p.min - G.inList.length === 1 ? 'friend' : 'friends'} in to unlock it.`}</p>
@@ -1327,6 +1328,103 @@ function spotSweep(root, text, geo, setAngle, done){
     o.after = el => { af && af(el); const sp = el.querySelector('.bigcard.spot'), h = sp && sp.querySelector('.h1');
       if (sp && h) spotSweep(sp, h, {top: .0624, slope: .1976 / .72}, a => sp.style.setProperty('--sa', a.toFixed(2) + 'deg'), () => h.animate([{textShadow:'0 0 34px rgba(255,236,214,.8)'},{textShadow:'0 0 0 rgba(255,236,214,0)'}], {duration:700, easing:'ease-out'})); };
     return o; }; });
+
+/* ===== every failure path has a screen ===== */
+const ensureStay = () => { let b = G.bookings.find(x => x.type === 'Stay'); if (!b){ b = {type:'Stay', t:'Casa Palolem villa, 3 nights', on:'Airbnb', amt:28800, among:[...G.inList], by:'Neha'}; G.bookings.push(b); } return b; };
+const edgeRow = (k, icn, t, d, warm) => `<button class="row" data-edge="${k}" style="border:0;background:none;text-align:left;padding:10px 0;border-top:1px solid var(--line);gap:12px;width:100%"><span style="width:38px;height:38px;border-radius:12px;background:${warm ? 'var(--peach)' : 'var(--mint)'};display:grid;place-items:center;flex:none">${ic(icn,'s')}</span><span class="grow"><b style="display:block">${t}</b><span class="small muted">${d}</span></span>${ic('right','s')}</button>`;
+function plansCard2(){ const rahulIn = G.inList.includes('Rahul') && !G.dropDone; const stay = G.bookings.find(b => b.type === 'Stay');
+  return `<div class="card rise" style="--d:3;display:flex;flex-direction:column;gap:4px"><b style="font-size:16px">If plans change</b><div class="small muted" style="margin-bottom:6px">Everyone agreed to these rules before paying.</div>
+    ${edgeRow('drop','users', rahulIn ? 'Rahul can’t come anymore' : 'Someone can’t come', 'Offer their seat, or the drop-out rule applies')}
+    ${edgeRow('hand','spark', G.lead && G.lead !== 'Neha' ? `${G.lead} runs the trip now` : 'I can’t manage the trip', 'Hand it over to someone in the gang')}
+    ${edgeRow('price','receipt', 'The stay costs more now', stay ? `${esc(stay.t.split(',')[0])} changed its price` : 'A booking went up after you paid')}
+    ${edgeRow('staycancel','home', 'The stay was cancelled', 'The host cancelled · refund and rebook', true)}
+    ${edgeRow('cancel','x', 'Cancel the whole trip', 'Needs most of the gang to agree · refunds', true)}</div>`; }
+function whatIfCard(){ return `<div class="card rise" style="--d:2;display:flex;flex-direction:column;gap:4px"><b style="font-size:16px">What if…</b><div class="small muted" style="margin-bottom:6px">Nobody loses money if things don’t work out.</div>
+    ${edgeRow('payfail','wallet', 'A payment doesn’t go through', 'No money taken · try again or another app')}
+    ${edgeRow('notlocked','x', `Not enough pay by ${joinTxt()}`, 'The trip doesn’t lock · everyone is refunded', true)}</div>`; }
+function bindEdges2(el){ el.querySelectorAll('[data-edge]').forEach(b => b.onclick = () => ({drop:dropFlow, hand:handOver, cancel:cancelFlow, price:priceUp, staycancel:stayCancelled, payfail:payFailed, notlocked:() => nav('notlocked', null, 'up')})[b.dataset.edge]()); }
+
+/* a friend's payment fails */
+function payFailed(){
+  sheet(`<div class="row sp"><span class="over">Pay by UPI · Karan</span><button class="link" style="width:auto;padding:4px" data-close aria-label="Close">${ic('x')}</button></div>
+    <div style="display:grid;place-items:center;gap:12px;padding:10px 0 4px;text-align:center"><span class="pop" style="width:72px;height:72px;border-radius:24px;background:var(--peach);display:grid;place-items:center;box-shadow:var(--soft),var(--gloss)">${ic('wallet')}</span>
+      <h2 style="margin:0;letter-spacing:-.02em">Payment didn’t go through</h2><p class="small muted" style="margin:0">Karan’s bank declined it. <b style="color:var(--ink)">No money was taken.</b> His seat is still waiting for him.</p></div>
+    <div class="card flat" style="display:flex;flex-direction:column;gap:8px"><div class="row sp"><span>Amount</span><b>${rs(G.amount)}</b></div><div class="row sp"><span>If money left his account</span><b>Back in 2 hours</b></div><div class="row sp"><span>Seat held until</span><b>${joinTxt()}</b></div></div>
+    <button class="btn" id="retry">Try again</button><button class="btn sec" id="other">Use another UPI app</button>`, (s, close) => {
+    const ok = () => { close(); banner('Karan is in! 🎟', `${rs(G.amount)} paid on the second try. No double charge.`, null, 3200); };
+    s.querySelector('#retry').onclick = ok; s.querySelector('#other').onclick = ok; });
+}
+
+/* not enough people paid by the last date */
+SCREENS.notlocked = () => { const paid = Math.max(2, G.need - 2), names = [...new Set([...G.inList, ...G.gang])].slice(0, paid);
+  return {bg:'var(--mint)', html:`<div class="bigcard" style="align-items:center;text-align:center;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 0">
+  <div class="drop">${BR.word(22)}</div>
+  <div style="position:relative;width:100%;height:220px">
+    <div class="gc drop" style="top:24px;background:#fff;--r:-4deg;animation-delay:.2s"><span class="av" style="background:var(--tang)">₹</span><span style="flex:1">Refunds on the way<span class="sub">${paid} people · ${rs(G.amount)} each</span></span><span class="pl slam" style="background:var(--pine);animation-delay:1s">Sent</span></div>
+    <div class="slam" style="position:absolute;right:8%;top:110px;--r:-12deg;animation-delay:.7s;width:104px;height:104px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--pine);box-shadow:var(--float),var(--gloss)">${BR.ticket({w:56, tilt:0, fill:'#DDF0EE', ink:'#016A6D'})}<b style="font-size:13px;letter-spacing:.06em;margin-top:3px">REFUNDED</b></div>
+    <span class="fchip drop" style="left:8%;top:140px;--r:-6deg;animation-delay:1.2s">${paid} of ${G.need} paid by ${joinTxt()}</span>
+  </div>
+  <h1 class="h1" style="margin:0">${words('Not this time.', .4, .08)}</h1>
+  <p class="rise" style="--d:8;margin:10px 6px 0;font-size:15px">Only ${paid} of the ${G.need} you needed paid by the last date, so the trip didn’t lock. Everyone gets their full ${rs(G.amount)} back to the same UPI, automatically.</p>
+  <div class="card rise" style="--d:10;width:100%;margin-top:14px;text-align:left;display:flex;flex-direction:column;gap:2px;padding:10px 14px">${names.map(n => `<div class="row sp" style="padding:6px 0"><span class="row" style="gap:8px">${avatar(n, 'sm')}${esc(n)}</span><b style="color:var(--pine)">${rs(G.amount)} back</b></div>`).join('')}</div>
+  <div class="foot" style="background:transparent;width:100%;margin-top:auto;padding-left:0;padding-right:0"><button class="btn rise" style="--d:12" id="redo">Try new dates with the same gang ${ic('right')}</button><button class="link" id="nlback">Back to the trip (demo)</button></div></div>`,
+  after(el){ el.querySelector('#redo').onclick = () => nav('create'); el.querySelector('#nlback').onclick = () => nav('home', null, 'fade'); }}; };
+
+/* the stay put its price up */
+function priceUp(){ const b = ensureStay(), old = b.amt, nw = old + 3200, n = b.among.length, extra = Math.round((nw - old) / n);
+  sheet(`<span class="over" style="color:var(--sunset-t)">${esc(b.on)} · just now</span><h2 style="margin:0;letter-spacing:-.02em">The stay costs more now</h2>
+    <p class="small muted" style="margin:0">${esc(b.t.split(',')[0])} changed its price before you confirmed. Nobody pays it quietly: the gang sees the change and decides.</p>
+    <div class="card flat" style="display:flex;flex-direction:column;gap:8px"><div class="row sp"><span>Was</span><b style="text-decoration:line-through;opacity:.6">${rs(old)}</b></div><div class="row sp"><span>Now</span><b>${rs(nw)}</b></div>
+      <div class="row sp" style="border-top:1px solid var(--line);padding-top:8px"><b>Extra each (${n} people)</b><b class="num" style="font-size:24px;color:var(--sunset-t)">+${rs(extra)}</b></div></div>
+    <div class="chips" id="pc"><button class="chip on" data-p="split">Split the extra</button><button class="chip" data-p="find">Find a cheaper stay</button></div>
+    <div class="note small" id="pn">${ic('users','s')}<span>Everyone gets a request for ${rs(extra)}. It shows in Money for all ${n}.</span></div>
+    <button class="btn" id="pgo">Ask the gang for ${rs(extra)} each</button>`, (s, close) => { let mode = 'split';
+    s.querySelectorAll('[data-p]').forEach(x => x.onclick = () => { mode = x.dataset.p; s.querySelectorAll('[data-p]').forEach(y => y.classList.toggle('on', y === x));
+      s.querySelector('#pn').innerHTML = mode === 'split' ? `${ic('users','s')}<span>Everyone gets a request for ${rs(extra)}. It shows in Money for all ${n}.</span>` : `${ic('home','s')}<span>We show 3 stays near Palolem at the old price. The gang votes in 24 hours.</span>`;
+      s.querySelector('#pgo').textContent = mode === 'split' ? `Ask the gang for ${rs(extra)} each` : 'Show cheaper stays'; });
+    s.querySelector('#pgo').onclick = () => { close(); if (mode === 'split'){ b.amt = nw; (G.feed = G.feed || []).push({n:'Neha', t:`stay went up · ${rs(extra)} more each`, w:'now'}); banner('Top-up requested', `${n} people · ${rs(extra)} each · visible in Money`, null, 3200); refreshHome2(); } else stayOptions(b, old); }; });
+}
+/* the host cancelled */
+function stayCancelled(){ const b = ensureStay();
+  sheet(`<span class="over" style="color:var(--sunset-t)">${esc(b.on)} · 2 min ago</span><h2 style="margin:0;letter-spacing:-.02em">The host cancelled the stay</h2>
+    <p class="small muted" style="margin:0">Not your fault, and not your money: ${esc(b.on)} refunds ${rs(b.amt)} to Neha, who booked it. Your trip is still locked.</p>
+    <div class="card flat" style="display:flex;flex-direction:column;gap:8px"><div class="row sp"><span>${esc(b.t.split(',')[0])}</span><b style="text-decoration:line-through;opacity:.6">${rs(b.amt)}</b></div><div class="row sp"><span>Refund to Neha</span><b style="color:var(--pine)">${rs(b.amt)} · 5–7 days</b></div></div>
+    <button class="btn" id="sopt">See similar stays for your dates</button><button class="link" data-close>Later</button>`, (s, close) => { s.querySelector('#sopt').onclick = () => { close(); stayOptions(b, b.amt); }; });
+}
+function stayOptions(b, budget){ const opts = [['Palolem Garden Villa','4 bedrooms · pool · 300 m to the beach', budget - 800, 'palolem'], ['Sea Breeze Homestay','3 rooms · breakfast · 600 m to the beach', budget - 2400, 'gokarna'], ['Casa Colomb','5 bedrooms · garden · 1.2 km', budget + 400, 'pondy']]; let pick = 0;
+  sheet(`<h2 style="margin:0;letter-spacing:-.02em">Stays for ${rangeTxt()}</h2><p class="small muted" style="margin:0">Same area, same dates, around what you had planned.</p>
+    <div style="display:flex;flex-direction:column;gap:10px" id="so">${opts.map((o, i) => `<button class="card row ${i === 0 ? 'sel' : ''}" data-o="${i}" style="gap:12px;padding:10px;text-align:left;border:0;width:100%"><img src="${IMG[o[3]]}" alt="" style="width:64px;height:56px;border-radius:12px;object-fit:cover;flex:none"><span class="grow"><b style="display:block">${o[0]}</b><span class="small muted">${o[1]}</span></span><b>${rs(o[2])}</b></button>`).join('')}</div>
+    <button class="btn" id="sbook">Book it and tell the gang</button>`, (s, close) => {
+    s.querySelectorAll('[data-o]').forEach(x => x.onclick = () => { pick = +x.dataset.o; s.querySelectorAll('[data-o]').forEach(y => y.classList.toggle('sel', y === x)); });
+    s.querySelector('#sbook').onclick = () => { close(); const o = opts[pick]; b.t = o[0] + ', 3 nights'; b.amt = o[2]; b.on = 'Airbnb'; (G.feed = G.feed || []).push({n:'Neha', t:`rebooked · ${o[0]}`, w:'now'}); banner(`${o[0]} is booked 🏡`, `${rs(o[2] / b.among.length)} each · the gang was told`, null, 3400); refreshHome2(); }; });
+}
+/* a venue won't honour the perk */
+function perkRefused(p){ p = (p && p.id) ? p : PERKS[0]; const bill = 6400, off = Math.round(bill * (parseInt(p.seal) || 40) / 100);
+  sheet(`<span class="over" style="color:var(--sunset-t)">${esc(p.name)}</span><h2 style="margin:0;letter-spacing:-.02em">They didn’t give you the perk?</h2>
+    <p class="small muted" style="margin:0">That shouldn’t happen. Tell us and we make it right tonight.</p>
+    <div class="chips" id="rr"><button class="chip on">Said they don’t know about it</button><button class="chip">Said it’s not valid now</button><button class="chip">Charged full price</button></div>
+    <div class="card flat" style="display:flex;flex-direction:column;gap:8px"><div class="row sp"><span>Bill paid in the app</span><b>${rs(bill)}</b></div><div class="row sp"><span>Discount you missed</span><b style="color:var(--pine)">${rs(off)} back</b></div><div class="small muted">Split back to whoever paid. The venue is paused if it happens twice.</div></div>
+    <button class="btn" id="rgo">Report and get ${rs(off)} back</button>`, (s, close) => {
+    s.querySelectorAll('#rr .chip').forEach(x => x.onclick = () => s.querySelectorAll('#rr .chip').forEach(y => y.classList.toggle('on', y === x)));
+    s.querySelector('#rgo').onclick = () => { close(); banner(`${rs(off)} is on its way back`, `Split ${G.inList.length} ways to whoever paid. ${p.name} has been flagged.`, null, 3600); }; });
+}
+const _perkSheet = perkSheet;
+perkSheet = function(p){ _perkSheet(p); const sh = document.querySelector('.scrim:last-of-type .sheet'); if (!sh) return; const on = perkOn((p && p.id) ? p : PERKS[0]); if (!on) return;
+  const l = document.createElement('button'); l.className = 'link'; l.textContent = 'They didn’t give us the perk'; l.onclick = () => { sh.closest('.scrim').querySelector('[data-close]').click(); setTimeout(() => perkRefused(p), 320); }; sh.appendChild(l); };
+
+/* trip cancelled, in the pop style */
+SCREENS.cancelled = () => { const each = Math.round(collected() / Math.max(1, G.inList.length));
+  return {bg:'var(--mint)', html:`<div class="bigcard" style="align-items:center;text-align:center;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 0">
+  <div class="drop">${BR.word(22)}</div>
+  <div style="position:relative;width:100%;height:190px">
+    <div class="slam" style="position:absolute;left:50%;margin-left:-62px;top:24px;--r:-10deg;animation-delay:.4s;width:124px;height:124px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--pine);box-shadow:var(--float),var(--gloss)">${BR.ticket({w:66, tilt:0, fill:'#DDF0EE', ink:'#016A6D'})}<b style="font-size:14px;letter-spacing:.06em;margin-top:3px">REFUNDED</b><span style="font-size:9px;font-weight:700;opacity:.8">${esc(G.place.toUpperCase())} ’26</span></div>
+    <span class="fchip drop" style="left:4%;top:156px;--r:-7deg;animation-delay:1s">Most of the gang agreed</span>
+  </div>
+  <h1 class="h1" style="margin:0">${words('Trip cancelled.', .3, .08)}</h1>
+  <p class="rise" style="--d:7;margin:10px 6px 0;font-size:15px">Nobody had to chase anyone. Every share goes back to the same UPI it came from, in 3–5 working days.</p>
+  <div class="card rise" style="--d:9;width:100%;margin-top:14px;text-align:left;display:flex;flex-direction:column;gap:2px;padding:10px 14px">${G.inList.map(n => `<div class="row sp" style="padding:6px 0"><span class="row" style="gap:8px">${avatar(n, 'sm')}${esc(n)}</span><b style="color:var(--pine)">${rs(each)} back</b></div>`).join('')}</div>
+  <div class="foot" style="background:transparent;width:100%;margin-top:auto;padding-left:0;padding-right:0"><button class="btn rise" style="--d:11" id="again">Plan another trip ${ic('right')}</button></div></div>`,
+  after(el){ el.querySelector('#again').onclick = () => location.reload(); }}; };
 
 nav('splash', null, 'fade');
 })();
